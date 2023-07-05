@@ -1,5 +1,5 @@
 import Foundation
-import HsExtensions
+import RxSwift
 
 class ExchangeSyncer {
     private let keyLastSyncTimestamp = "exchange-syncer-last-sync-timestamp"
@@ -8,7 +8,7 @@ class ExchangeSyncer {
     private let exchangeManager: ExchangeManager
     private let coinGeckoProvider: CoinGeckoProvider
     private let syncerStateStorage: SyncerStateStorage
-    private var tasks = Set<AnyTask>()
+    private let disposeBag = DisposeBag()
 
     init(exchangeManager: ExchangeManager, coinGeckoProvider: CoinGeckoProvider, syncerStateStorage: SyncerStateStorage) {
         self.exchangeManager = exchangeManager
@@ -20,15 +20,19 @@ class ExchangeSyncer {
         print("MarketCoins fetch error: \(error)")
     }
 
-    private func fetch(limit: Int, page: Int) async throws -> [Exchange] {
-        let exchanges = try await coinGeckoProvider.exchanges(limit: limit, page: page)
+    private func fetch(limit: Int, page: Int) -> Single<[Exchange]> {
+        coinGeckoProvider.exchangesSingle(limit: limit, page: page)
+                .flatMap { [weak self] exchanges -> Single<[Exchange]> in
+                    guard let syncer = self else {
+                        return Single.just([])
+                    }
 
-        guard exchanges.count == limit else {
-            return exchanges
-        }
+                    guard exchanges.count == limit else {
+                        return Single.just(exchanges)
+                    }
 
-        let more = try await fetch(limit: limit, page: page + 1)
-        return exchanges + more
+                    return syncer.fetch(limit: limit, page: page + 1).map { exchanges + $0 }
+                }
     }
 
     private func save(lastSyncTimestamp: TimeInterval) {
@@ -46,16 +50,15 @@ extension ExchangeSyncer {
             return
         }
 
-        Task { [weak self] in
-            do {
-                let exchanges = try await self?.fetch(limit: 250, page: 0)
-
-                self?.exchangeManager.handleFetched(exchanges: exchanges ?? [])
-                self?.save(lastSyncTimestamp: currentTimestamp)
-            } catch {
-                self?.handleFetch(error: error)
-            }
-        }.store(in: &tasks)
+        fetch(limit: 250, page: 0)
+                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .utility))
+                .subscribe(onSuccess: { [weak self] exchanges in
+                    self?.exchangeManager.handleFetched(exchanges: exchanges)
+                    self?.save(lastSyncTimestamp: currentTimestamp)
+                }, onError: { [weak self] error in
+                    self?.handleFetch(error: error)
+                })
+                .disposed(by: disposeBag)
     }
 
 }

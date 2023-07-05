@@ -1,9 +1,9 @@
-import HsExtensions
+import RxSwift
 
 class HsDataSyncer {
     private let coinSyncer: CoinSyncer
     private let hsProvider: HsProvider
-    private var tasks = Set<AnyTask>()
+    private let disposeBag = DisposeBag()
 
     init(coinSyncer: CoinSyncer, hsProvider: HsProvider) {
         self.coinSyncer = coinSyncer
@@ -15,14 +15,14 @@ class HsDataSyncer {
 extension HsDataSyncer {
 
     func sync() {
-        Task { [weak self, hsProvider] in
-            do {
-                let status = try await hsProvider.status()
-                self?.coinSyncer.sync(coinsTimestamp: status.coins, blockchainsTimestamp: status.blockchains, tokensTimestamp: status.tokens)
-            } catch {
-                print("Hs Status sync error: \(error)")
-            }
-        }.store(in: &tasks)
+        hsProvider.statusSingle()
+                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .utility))
+                .subscribe(onSuccess: { [weak self] status in
+                    self?.coinSyncer.sync(coinsTimestamp: status.coins, blockchainsTimestamp: status.blockchains, tokensTimestamp: status.tokens)
+                }, onError: { error in
+                    print("Hs Status sync error: \(error)")
+                })
+                .disposed(by: disposeBag)
     }
 
 }

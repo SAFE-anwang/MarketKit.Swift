@@ -1,4 +1,5 @@
 import Foundation
+import RxSwift
 
 class GlobalMarketInfoManager {
     private let expirationInterval: TimeInterval = 600 // 6 mins
@@ -15,19 +16,18 @@ class GlobalMarketInfoManager {
 
 extension GlobalMarketInfoManager {
 
-    func globalMarketPoints(currencyCode: String, timePeriod: HsTimePeriod) async throws -> [GlobalMarketPoint] {
+    func globalMarketPointsSingle(currencyCode: String, timePeriod: HsTimePeriod) -> Single<[GlobalMarketPoint]> {
         let currentTimestamp = Date().timeIntervalSince1970
 
         if let storedInfo = try? storage.globalMarketInfo(currencyCode: currencyCode, timePeriod: timePeriod), currentTimestamp - storedInfo.timestamp < expirationInterval {
-            return storedInfo.points
+            return Single.just(storedInfo.points)
         }
 
-        let points = try await provider.globalMarketPoints(currencyCode: currencyCode, timePeriod: timePeriod)
-
-        let info = GlobalMarketInfo(currencyCode: currencyCode, timePeriod: timePeriod, points: points)
-        try? storage.save(globalMarketInfo: info)
-
-        return points
+        return provider.globalMarketPointsSingle(currencyCode: currencyCode, timePeriod: timePeriod)
+                .do(onSuccess: { [weak self] points in
+                    let info = GlobalMarketInfo(currencyCode: currencyCode, timePeriod: timePeriod, points: points)
+                    try? self?.storage.save(globalMarketInfo: info)
+                })
     }
 
 }

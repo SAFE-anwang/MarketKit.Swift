@@ -1,4 +1,5 @@
 import Foundation
+import RxSwift
 
 class CoinHistoricalPriceManager {
     private let storage: CoinHistoricalPriceStorage
@@ -13,20 +14,21 @@ class CoinHistoricalPriceManager {
 
 extension CoinHistoricalPriceManager {
 
-    func cachedCoinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) -> Decimal? {
+    func coinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) -> Decimal? {
         try? storage.coinHistoricalPrice(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)?.value
     }
 
-    func coinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> Decimal {
-        let response = try await hsProvider.historicalCoinPrice(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
+    func coinHistoricalPriceValueSingle(coinUid: String, currencyCode: String, timestamp: TimeInterval) -> Single<Decimal> {
+        hsProvider.historicalCoinPriceSingle(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
+                .flatMap { [weak self] response in
+                    if abs(Int(timestamp) - response.timestamp) < 24 * 60 * 60 { // 1 day
+                        try? self?.storage.save(coinHistoricalPrice: CoinHistoricalPrice(coinUid: coinUid, currencyCode: currencyCode, value: response.price, timestamp: timestamp))
 
-        guard abs(Int(timestamp) - response.timestamp) < 24 * 60 * 60 else { // 1 day
-            throw ResponseError.returnedTimestampIsTooInaccurate
-        }
-
-        try? storage.save(coinHistoricalPrice: CoinHistoricalPrice(coinUid: coinUid, currencyCode: currencyCode, value: response.price, timestamp: timestamp))
-
-        return response.price
+                        return Single.just(response.price)
+                    } else {
+                        return Single.error(ResponseError.returnedTimestampIsTooInaccurate)
+                    }
+                }
     }
 
 }

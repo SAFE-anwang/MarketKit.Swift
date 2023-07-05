@@ -1,3 +1,6 @@
+import RxSwift
+import RxRelay
+
 class ExchangeManager {
     private let storage: ExchangeStorage
 

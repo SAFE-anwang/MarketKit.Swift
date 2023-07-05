@@ -1,7 +1,8 @@
 import Foundation
+import RxSwift
 import ObjectMapper
-import Alamofire
 import HsToolKit
+import Alamofire
 
 class HsNftProvider {
     private let baseUrl: String
@@ -20,12 +21,13 @@ class HsNftProvider {
 
 extension HsNftProvider {
 
-    func topCollections() async throws -> [NftTopCollectionResponse] {
+    func topCollectionsSingle() -> Single<[NftTopCollectionResponse]> {
         let parameters: Parameters = [
             "simplified": true
         ]
 
-        return try await networkManager.fetch(url: "\(baseUrl)/v1/nft/collections", parameters: parameters, encoding: encoding, headers: headers)
+        let request = networkManager.session.request("\(baseUrl)/v1/nft/collections", parameters: parameters, encoding: encoding, headers: headers)
+        return networkManager.single(request: request)
     }
 
 }

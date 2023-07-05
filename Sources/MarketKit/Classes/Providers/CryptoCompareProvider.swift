@@ -1,5 +1,6 @@
-import Alamofire
+import RxSwift
 import HsToolKit
+import Alamofire
 
 class CryptoCompareProvider {
     private let baseUrl = "https://min-api.cryptocompare.com"
@@ -12,21 +13,29 @@ class CryptoCompareProvider {
         self.apiKey = apiKey
     }
 
+    private func request(path: String, parameters: Parameters = [:]) -> DataRequest {
+        var parameters = parameters
+        parameters["api_key"] = apiKey
+
+        return networkManager.session
+                .request(baseUrl + path, method: .get, parameters: parameters, interceptor: RateLimitRetrier())
+                .cacheResponse(using: ResponseCacher(behavior: .doNotCache))
+    }
+
 }
 
 extension CryptoCompareProvider {
 
-    func posts() async throws -> [Post] {
-        var parameters: Parameters = [
+    func postsSingle() -> Single<[Post]> {
+        let parameters: Parameters = [
             "excludeCategories": "Sponsored",
             "feeds": "cointelegraph,theblock,decrypt",
             "extraParams": "Blocksdecoded"
         ]
 
-        parameters["api_key"] = apiKey
-
-        let postsResponse: PostsResponse = try await networkManager.fetch(url: "\(baseUrl)/data/v2/news/", method: .get, parameters: parameters, interceptor: RateLimitRetrier(), responseCacherBehavior: .doNotCache)
-        return postsResponse.posts
+        return networkManager.single(request: request(path: "/data/v2/news/", parameters: parameters)).map { (postsResponse: PostsResponse) in
+            postsResponse.posts
+        }
     }
 
 }

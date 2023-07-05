@@ -1,11 +1,15 @@
 import Foundation
+import RxSwift
+import HsToolKit
 import Alamofire
 import ObjectMapper
-import HsToolKit
 
 class CoinGeckoProvider {
     private let baseUrl = "https://api.coingecko.com/api/v3"
-
+    
+    private let safeBaseUrl: String = "https://safewallet.anwang.com/api/v3"
+    private let safeCoinUid: String = "safe-anwang"
+    
     private let networkManager: NetworkManager
 
     init(networkManager: NetworkManager) {
@@ -16,16 +20,16 @@ class CoinGeckoProvider {
 
 extension CoinGeckoProvider {
 
-    func exchanges(limit: Int, page: Int) async throws -> [Exchange] {
+    func exchangesSingle(limit: Int, page: Int) -> Single<[Exchange]> {
         let parameters: Parameters = [
             "per_page": limit,
             "page": page
         ]
 
-        return try await networkManager.fetch(url: "\(baseUrl)/exchanges", method: .get, parameters: parameters)
+        return networkManager.single(url: "\(baseUrl)/exchanges", method: .get, parameters: parameters)
     }
 
-    func marketTickers(coinId: String) async throws -> CoinGeckoCoinResponse {
+    func marketTickersSingle(coinId: String) -> Single<CoinGeckoCoinResponse> {
         let parameters: Parameters = [
             "tickers": "true",
             "localization": "false",
@@ -35,7 +39,23 @@ extension CoinGeckoProvider {
             "sparkline": "false"
         ]
 
-        return try await networkManager.fetch(url: "\(baseUrl)/coins/\(coinId)", method: .get, parameters: parameters)
+        return networkManager.single(url: "\(baseUrl)/coins/\(coinId)", method: .get, parameters: parameters)
     }
 
+}
+
+// safe Coin
+extension CoinGeckoProvider {
+    
+    func safeMarketTickersSingle(coinId: String) -> Single<CoinGeckoCoinResponse> {
+        let parameters: Parameters = [
+            "tickers": "true",
+            "localization": "false",
+            "market_data": "false",
+            "community_data": "false",
+            "developer_data": "false",
+            "sparkline": "false"
+        ]
+        return networkManager.single(url: "\(safeBaseUrl)/coins/\(coinId)", method: .get, parameters: parameters)
+    }
 }

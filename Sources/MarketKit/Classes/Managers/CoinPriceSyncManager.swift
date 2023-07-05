@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import RxSwift
 
 struct CoinPriceKey: Hashable {
     let coinUids: [String]
@@ -27,14 +27,14 @@ class CoinPriceSyncManager {
 
     private let schedulerFactory: CoinPriceSchedulerFactory
     private var schedulers = [String: Scheduler]()
-    private var subjects = [CoinPriceKey: CountedPassthroughSubject<[String: CoinPrice], Never>]()
+    private var subjects = [CoinPriceKey: PublishSubject<[String: CoinPrice]>]()
 
     init(schedulerFactory: CoinPriceSchedulerFactory) {
         self.schedulerFactory = schedulerFactory
     }
 
-    private func _cleanUp(key: CoinPriceKey) {
-        if let subject = subjects[key], subject.subscribersCount > 0 {
+    private func cleanUp(key: CoinPriceKey) {
+        if let subject = subjects[key], subject.hasObservers {
             return
         }
         subjects[key] = nil
@@ -46,7 +46,7 @@ class CoinPriceSyncManager {
 
     private func onDisposed(key: CoinPriceKey) {
         queue.async {
-            self._cleanUp(key: key)
+            self.cleanUp(key: key)
         }
     }
 
@@ -79,8 +79,8 @@ class CoinPriceSyncManager {
         return !newCoinTypes.isEmpty
     }
 
-    private func _subject(key: CoinPriceKey) -> AnyPublisher<[String: CoinPrice], Never> {
-        let subject: CountedPassthroughSubject<[String: CoinPrice], Never>
+    private func subject(key: CoinPriceKey) -> Observable<[String: CoinPrice]> {
+        let subject: PublishSubject<[String: CoinPrice]>
         var forceUpdate: Bool = false
 
         if let candidate = subjects[key] {
@@ -88,7 +88,7 @@ class CoinPriceSyncManager {
         } else {                                        // create new subject
             forceUpdate = needForceUpdate(key: key)     // if subject has non-subscribed tokens we need force schedule
 
-            subject = CountedPassthroughSubject<[String: CoinPrice], Never>()
+            subject = PublishSubject<[String: CoinPrice]>()
             subjects[key] = subject
         }
 
@@ -102,11 +102,9 @@ class CoinPriceSyncManager {
         }
 
         return subject
-                .handleEvents(
-                        receiveCompletion: { [weak self] _ in self?.onDisposed(key: key) },
-                        receiveCancel: { [weak self] in self?.onDisposed(key: key) }
-                )
-                .eraseToAnyPublisher()
+                .do(onDispose: { [weak self] in
+                    self?.onDisposed(key: key)
+                })
     }
 
 }
@@ -129,26 +127,25 @@ extension CoinPriceSyncManager {
         }
     }
 
-    func coinPricePublisher(coinUid: String, currencyCode: String) -> AnyPublisher<CoinPrice, Never> {
+    func coinPriceObservable(coinUid: String, currencyCode: String) -> Observable<CoinPrice> {
         queue.sync {
             let coinPriceKey = CoinPriceKey(coinUids: [coinUid], currencyCode: currencyCode)
 
-            return _subject(key: coinPriceKey)
-                    .flatMap { dictionary in
+            return subject(key: coinPriceKey)
+                    .flatMap { dictionary -> Observable<CoinPrice> in
                         if let coinPrice = dictionary[coinUid] {
-                            return Just(coinPrice).eraseToAnyPublisher()
+                            return Observable.just(coinPrice)
                         }
-                        return Empty().eraseToAnyPublisher()
+                        return Observable.never()
                     }
-                    .eraseToAnyPublisher()
         }
     }
 
-    func coinPriceMapPublisher(coinUids: [String], currencyCode: String) -> AnyPublisher<[String: CoinPrice], Never> {
+    func coinPriceMapObservable(coinUids: [String], currencyCode: String) -> Observable<[String: CoinPrice]> {
         let key = CoinPriceKey(coinUids: coinUids, currencyCode: currencyCode)
 
         return queue.sync {
-            _subject(key: key).eraseToAnyPublisher()
+            subject(key: key).asObservable()
         }
     }
 
@@ -166,39 +163,11 @@ extension CoinPriceSyncManager: ICoinPriceManagerDelegate {
                     }
 
                     if !coinPrices.isEmpty {
-                        subject.send(coinPrices)
+                        subject.onNext(coinPrices)
                     }
                 }
             }
         }
-    }
-
-}
-
-class CountedPassthroughSubject<Output, Failure>: Subject where Failure : Error {
-    private(set) var subscribersCount = 0
-    private let subject = PassthroughSubject<Output, Failure>()
-
-    func send(_ value: Output) {
-        subject.send(value)
-    }
-
-    func send(completion: Subscribers.Completion<Failure>) {
-        subject.send(completion: completion)
-    }
-
-    func send(subscription: Subscription) {
-        subject.send(subscription: subscription)
-    }
-
-    func receive<S>(subscriber: S) where Output == S.Input, Failure == S.Failure, S : Subscriber {
-        subject
-                .handleEvents(
-                        receiveSubscription: { [weak self] _ in self?.subscribersCount += 1 },
-                        receiveCompletion: { [weak self] _ in self?.subscribersCount -= 1 },
-                        receiveCancel: { [weak self] in self?.subscribersCount -= 1 }
-                )
-                .receive(subscriber: subscriber)
     }
 
 }

@@ -1,6 +1,6 @@
 import Foundation
-import GRDB
 import HsToolKit
+import GRDB
 
 extension Kit {
     private static let dataDirectoryName = "market-kit"
@@ -27,7 +27,7 @@ extension Kit {
         let hsNftProvider = HsNftProvider(baseUrl: hsApiBaseUrl, networkManager: networkManager, apiKey: hsProviderApiKey)
         let defiYieldProvider = DefiYieldProvider(networkManager: networkManager, apiKey: defiYieldApiKey)
 
-        let coinManager = CoinManager(storage: coinStorage, hsProvider: hsProvider, coinGeckoProvider: coinGeckoProvider, exchangeManager: exchangeManager)
+        let coinManager = CoinManager(storage: coinStorage, hsProvider: hsProvider, coinGeckoProvider: coinGeckoProvider, defiYieldProvider: defiYieldProvider, exchangeManager: exchangeManager)
         let nftManager = NftManager(coinManager: coinManager, provider: hsNftProvider)
         let marketOverviewManager = MarketOverviewManager(nftManager: nftManager, hsProvider: hsProvider)
 
@@ -61,8 +61,7 @@ extension Kit {
                 coinHistoricalPriceManager: coinHistoricalPriceManager,
                 postManager: postManager,
                 globalMarketInfoManager: globalMarketInfoManager,
-                hsProvider: hsProvider,
-                defiYieldProvider: defiYieldProvider
+                hsProvider: hsProvider
         )
     }
 
