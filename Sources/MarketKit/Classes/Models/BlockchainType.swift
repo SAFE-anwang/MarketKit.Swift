@@ -3,6 +3,7 @@ public enum BlockchainType {
     case bitcoinCash
     case ecash
     case litecoin
+    case dogecoin
     case dash
     case zcash
     case ethereum
@@ -16,6 +17,7 @@ public enum BlockchainType {
     case fantom
     case tron
     case solana
+    case safe
     case unsupported(uid: String)
 
     public init(uid: String) {
@@ -24,6 +26,7 @@ public enum BlockchainType {
         case "bitcoin-cash": self = .bitcoinCash
         case "ecash": self = .ecash
         case "litecoin": self = .litecoin
+        case "dogecoin": self = .dogecoin
         case "dash": self = .dash
         case "zcash": self = .zcash
         case "ethereum": self = .ethereum
@@ -37,6 +40,7 @@ public enum BlockchainType {
         case "fantom": self = .fantom
         case "tron": self = .tron
         case "solana": self = .solana
+        case "safe-anwang": self = .safe
         default: self = .unsupported(uid: uid)
         }
     }
@@ -47,6 +51,7 @@ public enum BlockchainType {
         case .bitcoinCash: return "bitcoin-cash"
         case .ecash: return "ecash"
         case .litecoin: return "litecoin"
+        case .dogecoin: return "dogecoin"
         case .dash: return "dash"
         case .zcash: return "zcash"
         case .ethereum: return "ethereum"
@@ -60,6 +65,7 @@ public enum BlockchainType {
         case .fantom: return "fantom"
         case .tron: return "tron"
         case .solana: return "solana"
+        case .safe: return "safe-anwang"
         case .unsupported(let uid): return uid
         }
     }
