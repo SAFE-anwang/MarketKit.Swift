@@ -1,7 +1,8 @@
 import Foundation
 
 protocol ICoinPriceCoinUidDataSource: AnyObject {
-    func coinUids(currencyCode: String) -> [String]
+    func allCoinUids(currencyCode: String) -> [String]
+    func combinedCoinUids(currencyCode: String) -> ([String], [String])
 }
 
 class CoinPriceSchedulerProvider {
@@ -17,24 +18,22 @@ class CoinPriceSchedulerProvider {
         self.currencyCode = currencyCode
     }
 
-    private var coinUids: [String] {
-        dataSource?.coinUids(currencyCode: currencyCode) ?? []
+    private var allCoinUids: [String] {
+        dataSource?.allCoinUids(currencyCode: currencyCode) ?? []
     }
 
     private func handle(updatedCoinPrices: [CoinPrice]) {
         manager.handleUpdated(coinPrices: updatedCoinPrices, currencyCode: currencyCode)
     }
-
 }
 
 extension CoinPriceSchedulerProvider: ISchedulerProvider {
-
     var id: String {
         "CoinPriceProvider"
     }
 
     var lastSyncTimestamp: TimeInterval? {
-        manager.lastSyncTimestamp(coinUids: coinUids, currencyCode: currencyCode)
+        manager.lastSyncTimestamp(coinUids: allCoinUids, currencyCode: currencyCode)
     }
 
     var expirationInterval: TimeInterval {
@@ -42,12 +41,15 @@ extension CoinPriceSchedulerProvider: ISchedulerProvider {
     }
 
     func sync() async throws {
-        let coinPrices = try await provider.coinPrices(coinUids: coinUids, currencyCode: currencyCode)
+        guard let (coinUids, walletCoinUids) = dataSource?.combinedCoinUids(currencyCode: currencyCode), !coinUids.isEmpty else {
+            return
+        }
+
+        let coinPrices = try await provider.coinPrices(coinUids: coinUids, walletCoinUids: walletCoinUids, currencyCode: currencyCode)
         handle(updatedCoinPrices: coinPrices)
     }
 
     func notifyExpired() {
-        manager.notifyExpired(coinUids: coinUids, currencyCode: currencyCode)
+        manager.notifyExpired(coinUids: allCoinUids, currencyCode: currencyCode)
     }
-
 }

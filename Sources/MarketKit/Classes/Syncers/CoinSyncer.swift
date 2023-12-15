@@ -1,5 +1,5 @@
-import Foundation
 import Combine
+import Foundation
 import HsExtensions
 
 class CoinSyncer {
@@ -29,19 +29,48 @@ class CoinSyncer {
         try? syncerStateStorage.save(value: String(tokens), key: keyTokensLastSyncTimestamp)
     }
 
-    func handleFetched(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) {
+    private func handleFetched(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) {
         do {
-            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
+            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: transform(tokenRecords: tokenRecords))
             fullCoinsUpdatedSubject.send()
         } catch {
             print("Fetched data error: \(error)")
         }
     }
 
+    private func transform(tokenRecords: [TokenRecord], blockchainUid: String, types: [String]) -> [TokenRecord] {
+        var tokenRecords = tokenRecords
+
+        if let index = tokenRecords.firstIndex(where: { $0.blockchainUid == blockchainUid && $0.type == "native" }) {
+            let record = tokenRecords[index]
+            tokenRecords.remove(at: index)
+
+            tokenRecords.append(contentsOf:
+                types.map {
+                    TokenRecord(
+                        coinUid: record.coinUid,
+                        blockchainUid: record.blockchainUid,
+                        type: $0,
+                        decimals: record.decimals
+                    )
+                }
+            )
+        }
+
+        return tokenRecords
+    }
+
+    private func transform(tokenRecords: [TokenRecord]) -> [TokenRecord] {
+        let derivationTypes = TokenType.Derivation.allCases.map { "derived:\($0.rawValue)" }
+        let addressTypes = TokenType.AddressType.allCases.map { "address_type:\($0.rawValue)" }
+
+        var tokenRecords = transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.bitcoin.uid, types: derivationTypes)
+        tokenRecords = transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.litecoin.uid, types: derivationTypes)
+        return transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.bitcoinCash.uid, types: addressTypes)
+    }
 }
 
 extension CoinSyncer {
-
     var fullCoinsUpdatedPublisher: AnyPublisher<Void, Never> {
         fullCoinsUpdatedSubject.eraseToAnyPublisher()
     }
@@ -62,17 +91,17 @@ extension CoinSyncer {
                 return
             }
 
-            guard let coins = [Coin](JSONString: try String(contentsOf: coinsPath, encoding: .utf8)) else {
+            guard let coins = try [Coin](JSONString: String(contentsOf: coinsPath, encoding: .utf8)) else {
                 return
             }
-            guard let blockchainRecords = [BlockchainRecord](JSONString: try String(contentsOf: blockchainsPath, encoding: .utf8)) else {
+            guard let blockchainRecords = try [BlockchainRecord](JSONString: String(contentsOf: blockchainsPath, encoding: .utf8)) else {
                 return
             }
-            guard let tokenRecords = [TokenRecord](JSONString: try String(contentsOf: tokensPath, encoding: .utf8)) else {
+            guard let tokenRecords = try [TokenRecord](JSONString: String(contentsOf: tokensPath, encoding: .utf8)) else {
                 return
             }
 
-            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
+            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: transform(tokenRecords: tokenRecords))
 
             try syncerStateStorage.save(value: "\(currentVersion)", key: keyInitialSyncVersion)
             try syncerStateStorage.delete(key: keyCoinsLastSyncTimestamp)
@@ -133,10 +162,9 @@ extension CoinSyncer {
 
     func syncInfo() -> Kit.SyncInfo {
         Kit.SyncInfo(
-                coinsTimestamp: try? syncerStateStorage.value(key: keyCoinsLastSyncTimestamp),
-                blockchainsTimestamp: try? syncerStateStorage.value(key: keyBlockchainsLastSyncTimestamp),
-                tokensTimestamp: try? syncerStateStorage.value(key: keyTokensLastSyncTimestamp)
+            coinsTimestamp: try? syncerStateStorage.value(key: keyCoinsLastSyncTimestamp),
+            blockchainsTimestamp: try? syncerStateStorage.value(key: keyBlockchainsLastSyncTimestamp),
+            tokensTimestamp: try? syncerStateStorage.value(key: keyTokensLastSyncTimestamp)
         )
     }
-
 }

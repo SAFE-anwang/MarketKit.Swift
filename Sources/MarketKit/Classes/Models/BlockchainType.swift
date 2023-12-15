@@ -18,6 +18,7 @@ public enum BlockchainType {
     case tron
     case solana
     case safe
+    case ton
     case unsupported(uid: String)
 
     public init(uid: String) {
@@ -41,6 +42,7 @@ public enum BlockchainType {
         case "tron": self = .tron
         case "solana": self = .solana
         case "safe-anwang": self = .safe
+        case "the-open-network": self = .ton
         default: self = .unsupported(uid: uid)
         }
     }
@@ -66,23 +68,20 @@ public enum BlockchainType {
         case .tron: return "tron"
         case .solana: return "solana"
         case .safe: return "safe-anwang"
-        case .unsupported(let uid): return uid
+        case .ton: return "the-open-network"
+        case let .unsupported(uid): return uid
         }
     }
 }
 
 extension BlockchainType: Hashable {
-
     public func hash(into hasher: inout Hasher) {
         hasher.combine(uid)
     }
-
 }
 
 extension BlockchainType: Equatable {
-
-    public static func ==(lhs: BlockchainType, rhs: BlockchainType) -> Bool {
+    public static func == (lhs: BlockchainType, rhs: BlockchainType) -> Bool {
         lhs.uid == rhs.uid
     }
-
 }
