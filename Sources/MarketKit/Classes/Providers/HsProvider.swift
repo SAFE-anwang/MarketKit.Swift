@@ -134,7 +134,7 @@ extension HsProvider {
         let parameters: Parameters = [
             "currency": currencyCode.lowercased(),
         ]
-        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
+        
         return try await networkManager.fetch(url: "\(baseUrl)/v1/categories/\(categoryUid)/coins", method: .get, parameters: parameters, headers: headers(apiTag: apiTag))
     }
 
@@ -143,7 +143,7 @@ extension HsProvider {
             "currency": currencyCode.lowercased(),
             "language": languageCode.lowercased(),
         ]
-
+        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)", method: .get, parameters: parameters, headers: headers(apiTag: apiTag))
     }
 
@@ -203,25 +203,25 @@ extension HsProvider {
     // Coin Prices
 
     func coinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
-        var parameters: Parameters = [
+        let parameters: Parameters = [
             "uids": coinUids.filter{ $0 != safeCoinUid }.joined(separator: ","),
             "currency": currencyCode.lowercased(),
             "fields": "price,price_change_24h,last_updated",
         ]
 
         if coinUids.contains(safeCoinUid) {
-            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
+            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers())
 
             let safeParameters = [
                "uids": safeCoinUid,
                "currency": currencyCode,
                "fields": "price,price_change_24h,last_updated"
             ]
-            let safeResponses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(safeBaseUrl)/v1/coins", method: .get, parameters: safeParameters, headers: headers)
+            let safeResponses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(safeBaseUrl)/v1/coins", method: .get, parameters: safeParameters, headers: headers())
 
             return (responses + safeResponses).compactMap { $0.coinPrice(currencyCode: currencyCode) }
         }else {
-            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
+            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers())
             return responses.map { $0.coinPrice(currencyCode: currencyCode) }
         }
     }
