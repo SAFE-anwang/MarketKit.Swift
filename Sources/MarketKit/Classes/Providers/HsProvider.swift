@@ -6,8 +6,11 @@ import HsToolKit
 class HsProvider {
     private let baseUrl: String
     private let networkManager: NetworkManager
-    private let headers: HTTPHeaders
-
+    private let headers: HTTPHeaders?
+    
+    private let safeBaseUrl: String = "https://safewallet.anwang.com"
+    private let safeCoinUid: String = "safe-anwang"
+    
     var proAuthToken: String?
 
     init(baseUrl: String, networkManager: NetworkManager, appVersion: String, appId: String?, apiKey: String?) {
@@ -35,7 +38,7 @@ class HsProvider {
         }
 
         var proHeaders = headers
-        proHeaders.add(.authorization(proAuthToken))
+        proHeaders?.add(.authorization(proAuthToken))
         return proHeaders
     }
 
@@ -97,7 +100,7 @@ extension HsProvider {
         if defi {
             parameters["defi"] = "true"
         }
-
+        
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
     }
 
@@ -118,7 +121,7 @@ extension HsProvider {
             "fields": "price,price_change_24h,market_cap,market_cap_rank,total_volume",
             "currency": currencyCode.lowercased()
         ]
-
+        let baseUrl = coinUids.contains(safeCoinUid) ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
     }
 
@@ -135,7 +138,7 @@ extension HsProvider {
             "currency": currencyCode.lowercased(),
             "language": languageCode.lowercased()
         ]
-
+        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)", method: .get, parameters: parameters, headers: headers)
     }
 
@@ -171,7 +174,7 @@ extension HsProvider {
         let response: [MarketInfoTvlRaw] = try await networkManager.fetch(url: "\(baseUrl)/v1/global-markets/tvls", method: .get, parameters: parameters, headers: headers)
         return response.compactMap { $0.marketInfoTvl }
     }
-
+    
     func defiCoins(currencyCode: String) async throws -> [DefiCoinRaw] {
         let parameters: Parameters = [
             "currency": currencyCode.lowercased()
@@ -179,7 +182,7 @@ extension HsProvider {
 
         return try await networkManager.fetch(url: "\(baseUrl)/v1/defi-protocols", method: .get, parameters: parameters, headers: headers)
     }
-
+    
     // Coin Categories
 
     func coinCategories(currencyCode: String? = nil) async throws -> [CoinCategory] {
@@ -205,7 +208,7 @@ extension HsProvider {
 
     func coinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
         var parameters: Parameters = [
-            "uids": coinUids.joined(separator: ","),
+            "uids": coinUids.filter{ $0 != safeCoinUid }.joined(separator: ","),
             "currency": currencyCode.lowercased(),
             "fields": "price,price_change_24h,last_updated"
         ]
@@ -213,9 +216,21 @@ extension HsProvider {
         if !walletCoinUids.isEmpty {
             parameters["enabled_uids"] = walletCoinUids.joined(separator: ",")
         }
+        if coinUids.contains(safeCoinUid) {
+            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
 
-        let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
-        return responses.map { $0.coinPrice(currencyCode: currencyCode) }
+            let safeParameters = [
+               "uids": safeCoinUid,
+               "currency": currencyCode,
+               "fields": "price,price_change_24h,last_updated"
+            ]
+            let safeResponses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(safeBaseUrl)/v1/coins", method: .get, parameters: safeParameters, headers: headers)
+
+            return (responses + safeResponses).compactMap { $0.coinPrice(currencyCode: currencyCode) }
+        }else {
+            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
+            return responses.map { $0.coinPrice(currencyCode: currencyCode) }
+        }
     }
 
     func historicalCoinPrice(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> HistoricalCoinPriceResponse {
@@ -240,7 +255,7 @@ extension HsProvider {
         if let fromTimestamp {
             parameters["from_timestamp"] = Int(fromTimestamp)
         }
-
+        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)/price_chart", method: .get, parameters: parameters, headers: headers)
     }
 
@@ -250,7 +265,7 @@ extension HsProvider {
         let parameters: Parameters = [
             "blockchain_uid": blockchainUid
         ]
-
+        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(coinUid)/holders", method: .get, parameters: parameters, headers: proHeaders)
     }
 
@@ -358,7 +373,7 @@ extension HsProvider {
         let parameters: Parameters = [
             "currency": currencyCode.lowercased()
         ]
-
+        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(coinUid)", method: .get, parameters: parameters, headers: proHeaders)
     }
 

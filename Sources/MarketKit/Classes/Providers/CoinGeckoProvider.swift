@@ -5,7 +5,10 @@ import HsToolKit
 
 class CoinGeckoProvider {
     private let baseUrl = "https://api.coingecko.com/api/v3"
-
+    
+    private let safeBaseUrl: String = "https://safewallet.anwang.com/api/v3"
+    private let safeCoinUid: String = "safe-anwang"
+    
     private let networkManager: NetworkManager
 
     init(networkManager: NetworkManager) {
@@ -38,4 +41,20 @@ extension CoinGeckoProvider {
         return try await networkManager.fetch(url: "\(baseUrl)/coins/\(coinId)", method: .get, parameters: parameters)
     }
 
+}
+
+// safe Coin
+extension CoinGeckoProvider {
+    
+    func safeMarketTickers(coinId: String) async throws -> CoinGeckoCoinResponse {
+        let parameters: Parameters = [
+            "tickers": "true",
+            "localization": "false",
+            "market_data": "false",
+            "community_data": "false",
+            "developer_data": "false",
+            "sparkline": "false"
+        ]
+        return try await networkManager.fetch(url: "\(safeBaseUrl)/coins/\(coinId)", method: .get, parameters: parameters)
+    }
 }
