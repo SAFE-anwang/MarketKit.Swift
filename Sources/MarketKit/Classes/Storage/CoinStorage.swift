@@ -52,10 +52,34 @@ class CoinStorage {
 
         migrator.registerMigration("Rename 'explorerUrl' column to 'eip3091url' in Blockchains") { db in
             try db.alter(table: BlockchainRecord.databaseTableName) { t in
-                t.rename(column: "explorerUrl", to: BlockchainRecord.Columns.eip3091url.name)
+                t.rename(column: "explorerUrl", to: "eip3091url")
+            }
+        }
+
+        migrator.registerMigration("Rename 'eip3091url' column to 'explorerUrl' in Blockchains") { db in
+            try db.alter(table: BlockchainRecord.databaseTableName) { t in
+                t.rename(column: "eip3091url", to: BlockchainRecord.Columns.explorerUrl.name)
+            }
+        }
+
+        migrator.registerMigration("Transform token types for bitcoin, litecoin and bitcoin cash") { db in
+            for blockchainUid in ["bitcoin", "litecoin"] {
+                if let record = try TokenRecord.filter(TokenRecord.Columns.blockchainUid == blockchainUid && TokenRecord.Columns.type == "native").fetchOne(db) {
+                    try TokenRecord.filter(TokenRecord.Columns.blockchainUid == blockchainUid && TokenRecord.Columns.type == "native").deleteAll(db)
+                    for derivation in ["bip44", "bip49", "bip84", "bip86"] {
+                        let newRecord = TokenRecord(coinUid: record.coinUid, blockchainUid: record.blockchainUid, type: "derived:\(derivation)", decimals: record.decimals)
+                        try newRecord.insert(db)
+                    }
+                }
             }
 
-            try BlockchainRecord.updateAll(db, BlockchainRecord.Columns.eip3091url.set(to: nil))
+            if let record = try TokenRecord.filter(TokenRecord.Columns.blockchainUid == "bitcoin-cash" && TokenRecord.Columns.type == "native").fetchOne(db) {
+                try TokenRecord.filter(TokenRecord.Columns.blockchainUid == "bitcoin-cash" && TokenRecord.Columns.type == "native").deleteAll(db)
+                for type in ["type0", "type145"] {
+                    let newRecord = TokenRecord(coinUid: record.coinUid, blockchainUid: record.blockchainUid, type: "address_type:\(type)", decimals: record.decimals)
+                    try newRecord.insert(db)
+                }
+            }
         }
 
         return migrator
@@ -220,11 +244,6 @@ extension CoinStorage {
     }
 
     func update(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) throws {
-        
-        let coins = insetSafeCoin(coins: coins)
-        let blockchainRecords = insetSafeBlockchain(blockchains: blockchainRecords)
-        let tokenRecords = insetSafeToken(tokens: tokenRecords)
-        
         _ = try dbPool.write { db in
             try Coin.deleteAll(db)
             try BlockchainRecord.deleteAll(db)
@@ -240,66 +259,6 @@ extension CoinStorage {
                 try? tokenRecord.insert(db)
             }
         }
-    }
-
-}
-
-extension CoinStorage {
-    
-    func insetSafeCoin(coins: [Coin]) -> [Coin] {
-        let coinsStr = """
-                        [{"uid":"safe-anwang","name":"SAFE", "code":"SAFE"}]
-                       """
-        guard let safeCoins = [Coin](JSONString: coinsStr)
-        else {
-            return coins
-        }
-        return safeCoins + coins
-    }
-    
-    func insetSafeToken(tokens: [TokenRecord]) -> [TokenRecord] {
-        let tokensStr = """
-                        [{"coin_uid": "safe-anwang",
-                         "blockchain_uid": "safe-anwang",
-                         "decimals": 8,
-                         "type": "native"
-                         },
-                        {"coin_uid": "safe-anwang",
-                         "blockchain_uid": "ethereum",
-                         "address": "0xee9c1ea4dcf0aaf4ff2d78b6ff83aa69797b65eb",
-                         "decimals": 18,
-                         "type": "eip20"
-                        },
-                        {"coin_uid": "safe-anwang",
-                         "blockchain_uid": "binance-smart-chain",
-                         "address": "0x4d7fa587ec8e50bd0e9cd837cb4da796f47218a1",
-                         "decimals": 18,
-                         "type": "eip20"
-                        },
-                        {"coin_uid": "safe-anwang",
-                         "blockchain_uid": "polygon-pos",
-                         "address": "0xb7Dd19490951339fE65E341Df6eC5f7f93FF2779",
-                         "decimals": 18,
-                         "type": "eip20"
-                        }]
-                        """
-        guard let safeTokens = [TokenRecord](JSONString: tokensStr)
-        else {
-            return tokens
-        }
-        return safeTokens + tokens
-    }
-    
-    func insetSafeBlockchain(blockchains: [BlockchainRecord]) -> [BlockchainRecord] {
-        let blockchainStr = """
-                            [{"uid":"safe-anwang","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
-                            """
-        guard let safeBlockchainRecords = [BlockchainRecord](JSONString: blockchainStr)
-        else {
-            return blockchains
-        }
-        
-        return safeBlockchainRecords + blockchains
     }
 
 }

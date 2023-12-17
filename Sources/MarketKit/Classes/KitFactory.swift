@@ -1,12 +1,12 @@
 import Foundation
-import HsToolKit
 import GRDB
+import HsToolKit
 
 extension Kit {
     private static let dataDirectoryName = "market-kit"
     private static let databaseFileName = "market-kit"
 
-    public static func instance(hsApiBaseUrl: String, cryptoCompareApiKey: String? = nil, defiYieldApiKey: String? = nil, hsProviderApiKey: String? = nil, minLogLevel: Logger.Level = .error) throws -> Kit {
+    public static func instance(hsApiBaseUrl: String, cryptoCompareApiKey: String? = nil, defiYieldApiKey: String? = nil, hsProviderApiKey: String? = nil, appVersion: String, appId: String?, minLogLevel: Logger.Level = .error) throws -> Kit {
         let logger = Logger(minLogLevel: minLogLevel)
         let reachabilityManager = ReachabilityManager()
         let networkManager = NetworkManager(logger: logger)
@@ -23,11 +23,11 @@ extension Kit {
         let exchangeSyncer = ExchangeSyncer(exchangeManager: exchangeManager, coinGeckoProvider: coinGeckoProvider, syncerStateStorage: syncerStateStorage)
 
         let cryptoCompareProvider = CryptoCompareProvider(networkManager: networkManager, apiKey: cryptoCompareApiKey)
-        let hsProvider = HsProvider(baseUrl: hsApiBaseUrl, networkManager: networkManager, apiKey: hsProviderApiKey)
+        let hsProvider = HsProvider(baseUrl: hsApiBaseUrl, networkManager: networkManager, appVersion: appVersion, appId: appId, apiKey: hsProviderApiKey)
         let hsNftProvider = HsNftProvider(baseUrl: hsApiBaseUrl, networkManager: networkManager, apiKey: hsProviderApiKey)
         let defiYieldProvider = DefiYieldProvider(networkManager: networkManager, apiKey: defiYieldApiKey)
 
-        let coinManager = CoinManager(storage: coinStorage, hsProvider: hsProvider, coinGeckoProvider: coinGeckoProvider, defiYieldProvider: defiYieldProvider, exchangeManager: exchangeManager)
+        let coinManager = CoinManager(storage: coinStorage, hsProvider: hsProvider, coinGeckoProvider: coinGeckoProvider, exchangeManager: exchangeManager)
         let nftManager = NftManager(coinManager: coinManager, provider: hsNftProvider)
         let marketOverviewManager = MarketOverviewManager(nftManager: nftManager, hsProvider: hsProvider)
 
@@ -61,7 +61,8 @@ extension Kit {
                 coinHistoricalPriceManager: coinHistoricalPriceManager,
                 postManager: postManager,
                 globalMarketInfoManager: globalMarketInfoManager,
-                hsProvider: hsProvider
+                hsProvider: hsProvider,
+                defiYieldProvider: defiYieldProvider
         )
     }
 

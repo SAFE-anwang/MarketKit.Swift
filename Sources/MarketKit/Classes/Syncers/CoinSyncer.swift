@@ -1,6 +1,6 @@
 import Foundation
-import RxSwift
-import RxRelay
+import Combine
+import HsExtensions
 
 class CoinSyncer {
     private let keyCoinsLastSyncTimestamp = "coin-syncer-coins-last-sync-timestamp"
@@ -13,9 +13,9 @@ class CoinSyncer {
     private let storage: CoinStorage
     private let hsProvider: HsProvider
     private let syncerStateStorage: SyncerStateStorage
-    private let disposeBag = DisposeBag()
+    private var tasks = Set<AnyTask>()
 
-    private let fullCoinsUpdatedRelay = PublishRelay<Void>()
+    private let fullCoinsUpdatedSubject = PassthroughSubject<Void, Never>()
 
     init(storage: CoinStorage, hsProvider: HsProvider, syncerStateStorage: SyncerStateStorage) {
         self.storage = storage
@@ -29,21 +29,52 @@ class CoinSyncer {
         try? syncerStateStorage.save(value: String(tokens), key: keyTokensLastSyncTimestamp)
     }
 
-    func handleFetched(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) {
+    private func handleFetched(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) {
         do {
-            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
-            fullCoinsUpdatedRelay.accept(())
+            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: transform(tokenRecords: tokenRecords))
+            fullCoinsUpdatedSubject.send()
         } catch {
             print("Fetched data error: \(error)")
         }
+    }
+
+    private func transform(tokenRecords: [TokenRecord], blockchainUid: String, types: [String]) -> [TokenRecord] {
+        var tokenRecords = tokenRecords
+
+        if let index = tokenRecords.firstIndex(where: { $0.blockchainUid == blockchainUid && $0.type == "native" }) {
+            let record = tokenRecords[index]
+            tokenRecords.remove(at: index)
+
+            tokenRecords.append(contentsOf:
+                    types.map {
+                        TokenRecord(
+                                coinUid: record.coinUid,
+                                blockchainUid: record.blockchainUid,
+                                type: $0,
+                                decimals: record.decimals
+                        )
+                    }
+            )
+        }
+
+        return tokenRecords
+    }
+
+    private func transform(tokenRecords: [TokenRecord]) -> [TokenRecord] {
+        let derivationTypes = TokenType.Derivation.allCases.map { "derived:\($0.rawValue)" }
+        let addressTypes = TokenType.AddressType.allCases.map { "address_type:\($0.rawValue)" }
+
+        var tokenRecords = transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.bitcoin.uid, types: derivationTypes)
+        tokenRecords = transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.litecoin.uid, types: derivationTypes)
+        return transform(tokenRecords: tokenRecords, blockchainUid: BlockchainType.bitcoinCash.uid, types: addressTypes)
     }
 
 }
 
 extension CoinSyncer {
 
-    var fullCoinsUpdatedObservable: Observable<Void> {
-        fullCoinsUpdatedRelay.asObservable()
+    var fullCoinsUpdatedPublisher: AnyPublisher<Void, Never> {
+        fullCoinsUpdatedSubject.eraseToAnyPublisher()
     }
 
     func initialSync() {
@@ -72,7 +103,7 @@ extension CoinSyncer {
                 return
             }
 
-            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
+            try storage.update(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: transform(tokenRecords: tokenRecords))
 
             try syncerStateStorage.save(value: "\(currentVersion)", key: keyInitialSyncVersion)
             try syncerStateStorage.delete(key: keyCoinsLastSyncTimestamp)
@@ -117,15 +148,18 @@ extension CoinSyncer {
             return
         }
 
-        Single.zip(hsProvider.allCoinsSingle(), hsProvider.allBlockchainRecordsSingle(), hsProvider.allTokenRecordsSingle())
-                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .utility))
-                .subscribe(onSuccess: { [weak self] coins, blockchainRecords, tokenRecords in
-                    self?.handleFetched(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
-                    self?.saveLastSyncTimestamps(coins: coinsTimestamp, blockchains: blockchainsTimestamp, tokens: tokensTimestamp)
-                }, onError: { error in
-                    print("Market data fetch error: \(error)")
-                })
-                .disposed(by: disposeBag)
+        Task { [weak self, hsProvider] in
+            do {
+                async let coins = try hsProvider.allCoins()
+                async let blockchainRecords = try hsProvider.allBlockchainRecords()
+                async let tokenRecords = try hsProvider.allTokenRecords()
+
+                try await self?.handleFetched(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
+                self?.saveLastSyncTimestamps(coins: coinsTimestamp, blockchains: blockchainsTimestamp, tokens: tokensTimestamp)
+            } catch {
+                print("Market data fetch error: \(error)")
+            }
+        }.store(in: &tasks)
     }
 
     func syncInfo() -> Kit.SyncInfo {

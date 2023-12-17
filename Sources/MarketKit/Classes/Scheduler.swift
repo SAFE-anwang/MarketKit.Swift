@@ -1,45 +1,47 @@
 import Foundation
-import RxSwift
+import Combine
 import HsToolKit
+import HsExtensions
 
 protocol ISchedulerProvider {
     var id: String { get }
     var lastSyncTimestamp: TimeInterval? { get }
     var expirationInterval: TimeInterval { get }
-    var syncSingle: Single<Void> { get }
+    func sync() async throws
     func notifyExpired()
 }
 
 class Scheduler {
-    private static let retryInterval: TimeInterval = 30
+    private static let retryInterval: TimeInterval = 5
 
     private let bufferInterval: TimeInterval
 
     private let provider: ISchedulerProvider
-    private let reachabilityManager: IReachabilityManager
+    private let reachabilityManager: ReachabilityManager
     private var logger: Logger?
 
-    private let disposeBag = DisposeBag()
-    private var timerDisposable: Disposable?
+    private var cancellables = Set<AnyCancellable>()
+    private var tasks = Set<AnyTask>()
+    private var scheduledTask: Task<Void, Error>?
 
     private var syncInProgress = false
     private var expirationNotified = false
 
-    init(provider: ISchedulerProvider, reachabilityManager: IReachabilityManager, bufferInterval: TimeInterval = 5, logger: Logger? = nil) {
+    private let queue = DispatchQueue(label: "io.horizontalsystems.market_kit.scheduler", qos: .utility)
+
+    init(provider: ISchedulerProvider, reachabilityManager: ReachabilityManager, bufferInterval: TimeInterval = 5, logger: Logger? = nil) {
         self.provider = provider
         self.reachabilityManager = reachabilityManager
         self.bufferInterval = bufferInterval
         self.logger = logger
 
-        reachabilityManager.reachabilityObservable
-                .subscribeOn(ConcurrentDispatchQueueScheduler(qos: .utility))
-                .subscribe(onNext: { [weak self] reachable in
+        reachabilityManager.$isReachable
+                .sink { [weak self] reachable in
                     if reachable {
-                        print("reachable")
                         self?.autoSchedule()
                     }
-                })
-                .disposed(by: disposeBag)
+                }
+                .store(in: &cancellables)
     }
 
     deinit {
@@ -47,6 +49,12 @@ class Scheduler {
     }
 
     private func sync() {
+        queue.async {
+            self._sync()
+        }
+    }
+
+    private func _sync() {
         // check if sync process is already running
         guard !syncInProgress else {
             logger?.debug("Scheduler \(provider.id): Sync already running")
@@ -57,52 +65,56 @@ class Scheduler {
 
         syncInProgress = true
 
-        provider.syncSingle
-                .subscribe(onSuccess: { [weak self] in
-                    self?.onSyncSuccess()
-                }, onError: { [weak self] error in
-                    self?.onSyncError(error: error)
-                })
-                .disposed(by: disposeBag)
+        Task { [weak self, provider] in
+            do {
+                try await provider.sync()
+                self?.onSyncSuccess()
+            } catch {
+                self?.onSyncError(error: error)
+            }
+        }.store(in: &tasks)
     }
 
     private func onSyncSuccess() {
-        logger?.debug("Scheduler \(provider.id): Sync success")
+        queue.async {
+            self.logger?.debug("Scheduler \(self.provider.id): Sync success")
 
-        expirationNotified = false
+            self.expirationNotified = false
 
-        syncInProgress = false
-        autoSchedule(minDelay: Self.retryInterval)
+            self.syncInProgress = false
+            self.autoSchedule(minDelay: Self.retryInterval)
+        }
     }
 
     private func onSyncError(error: Error) {
-        logger?.error("Scheduler \(provider.id): Sync error: \(error)")
+        queue.async {
+            self.logger?.error("Scheduler \(self.provider.id): Sync error: \(error)")
 
-        notifyExpiration()
+            self._notifyExpiration()
 
-        syncInProgress = false
-        schedule(delay: Self.retryInterval)
+            self.syncInProgress = false
+            self._schedule(delay: Self.retryInterval)
+        }
     }
 
-    private func schedule(delay: TimeInterval) {
+    private func _schedule(delay: TimeInterval) {
         let intDelay = Int(delay.rounded(.up))
 
         logger?.debug("Scheduler \(provider.id): schedule delay: \(intDelay) sec")
 
         // invalidate previous timer if exists
-        timerDisposable?.dispose()
+        scheduledTask?.cancel()
 
         // schedule new timer
-        timerDisposable = Observable<Int>
-                .timer(.seconds(intDelay), scheduler: ConcurrentDispatchQueueScheduler(qos: .background))
-                .subscribe(onNext: { [weak self] _ in
-                    self?.sync()
-                })
+        scheduledTask = Task<Void, Error> { [weak self] in
+            try await Task.sleep(nanoseconds: UInt64(intDelay) * 1_000_000_000)
+            self?.sync()
+        }
 
-        timerDisposable?.disposed(by: disposeBag)
+        scheduledTask?.store(in: &tasks)
     }
 
-    private func notifyExpiration() {
+    private func _notifyExpiration() {
         guard !expirationNotified else {
             return
         }
@@ -127,26 +139,20 @@ class Scheduler {
             delay = max(0, provider.expirationInterval - bufferInterval - diff)
         }
 
-        schedule(delay: max(minDelay, delay))
+        queue.async {
+            self._schedule(delay: max(minDelay, delay))
+        }
     }
 
 }
 
 extension Scheduler {
 
-    func schedule() {
-        logger?.debug("Scheduler \(provider.id): Auto schedule")
-
-        DispatchQueue.global(qos: .utility).async {
-            self.autoSchedule()
-        }
-    }
-
     func forceSchedule() {
         logger?.debug("Scheduler \(provider.id): Force schedule")
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            self.schedule(delay: 0)
+        queue.async {
+            self._schedule(delay: 0)
         }
     }
 
