@@ -6,11 +6,9 @@ import HsToolKit
 class HsProvider {
     private let baseUrl: String
     private let networkManager: NetworkManager
-    private let headers: HTTPHeaders?
-    
     private let safeBaseUrl: String = "https://safewallet.anwang.com"
     private let safeCoinUid: String = "safe-anwang"
-    
+    private let headers: HTTPHeaders
     var proAuthToken: String?
 
     init(baseUrl: String, networkManager: NetworkManager, appVersion: String, appId: String?, apiKey: String?) {
@@ -38,7 +36,7 @@ class HsProvider {
         }
 
         var proHeaders = headers
-        proHeaders?.add(.authorization(proAuthToken))
+        proHeaders.add(.authorization(proAuthToken))
         return proHeaders
     }
 
