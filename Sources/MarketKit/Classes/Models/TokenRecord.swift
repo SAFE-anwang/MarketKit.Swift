@@ -58,29 +58,28 @@ class TokenRecord: Record, Decodable, ImmutableMappable {
         case "bep2": reference >>> map["symbol"]
         case "spl": reference >>> map["address"]
         case "unsupported":
-            if let reference = reference {
+            if let reference {
                 reference >>> map["address"]
             }
         default: ()
         }
     }
 
-    required init(row: Row) {
+    required init(row: Row) throws {
         coinUid = row[Columns.coinUid]
         blockchainUid = row[Columns.blockchainUid]
         type = row[Columns.type]
         decimals = row[Columns.decimals]
         reference = row[Columns.reference]
 
-        super.init(row: row)
+        try super.init(row: row)
     }
 
-    override func encode(to container: inout PersistenceContainer) {
+    override func encode(to container: inout PersistenceContainer) throws {
         container[Columns.coinUid] = coinUid
         container[Columns.blockchainUid] = blockchainUid
         container[Columns.type] = type
         container[Columns.decimals] = decimals
         container[Columns.reference] = reference
     }
-
 }

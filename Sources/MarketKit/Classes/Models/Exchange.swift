@@ -22,15 +22,15 @@ public class Exchange: Record, ImmutableMappable {
         super.init()
     }
 
-    required init(row: Row) {
+    required init(row: Row) throws {
         id = row[Columns.id]
         name = row[Columns.name]
         imageUrl = row[Columns.imageUrl]
 
-        super.init(row: row)
+        try super.init(row: row)
     }
 
-    override open func encode(to container: inout PersistenceContainer) {
+    override open func encode(to container: inout PersistenceContainer) throws {
         container[Columns.id] = id
         container[Columns.name] = name
         container[Columns.imageUrl] = imageUrl
@@ -38,9 +38,7 @@ public class Exchange: Record, ImmutableMappable {
 }
 
 extension Exchange: CustomStringConvertible {
-
     public var description: String {
         "Exchange [id: \(id); name: \(name); imageUrl: \(imageUrl)]"
     }
-
 }
