@@ -7,7 +7,7 @@ class HsProvider {
     private let baseUrl: String
     private let networkManager: NetworkManager
     private let safeBaseUrl: String = "https://safewallet.anwang.com"
-    private let safeCoinUid: String = "safe-anwang"
+    private let coinGeckoUrl: String = "https://api.coingecko.com/api/v3"
     private let appVersion: String
     private let appId: String?
     private let apiKey: String?
@@ -49,6 +49,7 @@ class HsProvider {
         headers(apiTag: apiTag, auth: proAuthToken)
     }
 }
+
 
 extension HsProvider {
     func marketOverview(currencyCode: String) async throws -> MarketOverviewResponse {
@@ -207,7 +208,7 @@ extension HsProvider {
         if !walletCoinUids.isEmpty {
             parameters["enabled_uids"] = walletCoinUids.joined(separator: ",")
         }
-        if coinUids.contains(safeCoinUid) {
+        if coinUids.contains(safeCoinUid) || coinUids.contains(safe4CoinUid) {
             let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers(apiTag: "coin_prices"))
 
             let safeParameters = [
@@ -538,6 +539,31 @@ extension HsProvider {
 
         init(map: Map) throws {
             token = try map.value("token")
+        }
+    }
+}
+
+extension HsProvider {
+
+    func safeHistoricalCoinPrice(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> SafeCoinHistoricalPriceResponse {
+        let dateStr = formatTransactionDate(from: timestamp)
+        let parameters: Parameters = [
+            "date": dateStr
+        ]
+        return try await networkManager.fetch(url: "\(coinGeckoUrl)/coins/\(coinUid)/history", method: .get, parameters: parameters, headers: headers())
+    }
+    
+    private func formatTransactionDate(from timestamp: TimeInterval) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "dd-MM-yyyy"
+        let date = NSDate(timeIntervalSince1970: timestamp) as Date
+        return dateFormatter.string(from: date)
+    }
+    
+    struct SafeCoinHistoricalPriceResponse: ImmutableMappable {
+        let price: Decimal
+        init(map: Map) throws {
+            price = try map.value("market_data.current_price.usd", using: Transform.stringToDecimalTransform)
         }
     }
 }

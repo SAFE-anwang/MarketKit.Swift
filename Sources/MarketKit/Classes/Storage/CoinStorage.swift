@@ -257,9 +257,9 @@ extension CoinStorage {
     
     func update(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) throws {
         
-        let coins = insetSafeCoin(coins: coins)
-        let blockchainRecords = insetSafeBlockchain(blockchains: blockchainRecords)
-        let tokenRecords = insetSafeToken(tokens: tokenRecords)
+        let coins = coins + safeCoin() + safe4Coin()
+        let blockchainRecords = blockchainRecords + safeBlockchain() + safe4Blockchain()
+        let tokenRecords = tokenRecords + safeToken() + safe4Token()
         
         _ = try dbPool.write { db in
             try Coin.deleteAll(db)
@@ -279,39 +279,40 @@ extension CoinStorage {
     }
 }
 
+
 extension CoinStorage {
     
-    func insetSafeCoin(coins: [Coin]) -> [Coin] {
+    func safeCoin() -> [Coin] {
         let coinsStr = """
-                        [{"uid":"safe-anwang","name":"SAFE", "code":"SAFE"}]
+                        [{"uid":"\(safeCoinUid)","name":"SAFE", "code":"SAFE"}]
                        """
         guard let safeCoins = [Coin](JSONString: coinsStr)
         else {
-            return coins
+            return []
         }
-        return safeCoins + coins
+        return safeCoins
     }
     
-    func insetSafeToken(tokens: [TokenRecord]) -> [TokenRecord] {
+    func safeToken() -> [TokenRecord] {
         let tokensStr = """
-                        [{"coin_uid": "safe-anwang",
-                         "blockchain_uid": "safe-anwang",
+                        [{"coin_uid":"\(safeCoinUid)",
+                         "blockchain_uid":"\(safeCoinUid)",
                          "decimals": 8,
                          "type": "native"
                          },
-                        {"coin_uid": "safe-anwang",
+                        {"coin_uid":"\(safeCoinUid)",
                          "blockchain_uid": "ethereum",
                          "address": "0xee9c1ea4dcf0aaf4ff2d78b6ff83aa69797b65eb",
                          "decimals": 18,
                          "type": "eip20"
                         },
-                        {"coin_uid": "safe-anwang",
+                        {"coin_uid":"\(safeCoinUid)",
                          "blockchain_uid": "binance-smart-chain",
                          "address": "0x4d7fa587ec8e50bd0e9cd837cb4da796f47218a1",
                          "decimals": 18,
                          "type": "eip20"
                         },
-                        {"coin_uid": "safe-anwang",
+                        {"coin_uid":"\(safeCoinUid)",
                          "blockchain_uid": "polygon-pos",
                          "address": "0xb7Dd19490951339fE65E341Df6eC5f7f93FF2779",
                          "decimals": 18,
@@ -320,23 +321,63 @@ extension CoinStorage {
                         """
         guard let safeTokens = [TokenRecord](JSONString: tokensStr)
         else {
-            return tokens
+            return []
         }
-        return safeTokens + tokens
+        return safeTokens
     }
     
-    func insetSafeBlockchain(blockchains: [BlockchainRecord]) -> [BlockchainRecord] {
+    func safeBlockchain() -> [BlockchainRecord] {
         let blockchainStr = """
-                            [{"uid":"safe-anwang","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
+                            [{"uid":"\(safeCoinUid)","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
                             """
         guard let safeBlockchainRecords = [BlockchainRecord](JSONString: blockchainStr)
         else {
-            return blockchains
+            return []
         }
         
-        return safeBlockchainRecords + blockchains
+        return safeBlockchainRecords
     }
 
+}
+
+extension CoinStorage {
+    func safe4Coin() -> [Coin] {
+        let coinsStr = """
+                        [{"uid":"\(safe4CoinUid)","name":"SAFE4", "code":"SAFE4"}]
+                       """
+        guard let safeCoins = [Coin](JSONString: coinsStr)
+        else {
+            return []
+        }
+        return safeCoins
+    }
+    
+    func safe4Token() -> [TokenRecord] {
+        let tokensStr = """
+                        [{"coin_uid": "\(safe4CoinUid)",
+                         "blockchain_uid": "\(safe4CoinUid)",
+                         "decimals": 18,
+                         "type": "native"
+                         }]
+                        """
+        guard let safeTokens = [TokenRecord](JSONString: tokensStr)
+        else {
+            return []
+        }
+        return safeTokens
+    }
+    
+    func safe4Blockchain() -> [BlockchainRecord] {
+        let blockchainStr = """
+                            [{"uid":"\(safe4CoinUid)","name":"SAFE4","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
+                            """
+        guard let safeBlockchainRecords = [BlockchainRecord](JSONString: blockchainStr)
+        else {
+            return []
+        }
+        
+        return safeBlockchainRecords
+    }
 }
 
 struct CoinTokensRecord: FetchableRecord, Decodable {

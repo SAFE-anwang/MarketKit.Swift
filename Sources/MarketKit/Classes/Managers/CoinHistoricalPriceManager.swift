@@ -16,11 +16,30 @@ extension CoinHistoricalPriceManager {
     }
 
     func coinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> Decimal {
-        let response = try await hsProvider.historicalCoinPrice(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
+        
+        if coinUid.isSafeCoin {
+            return try await safeCoinHistoricalPriceValue(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
+            
+        }else {
+            
+            let response = try await hsProvider.historicalCoinPrice(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
 
-        guard abs(Int(timestamp) - response.timestamp) < 24 * 60 * 60 else { // 1 day
-            throw ResponseError.returnedTimestampIsTooInaccurate
+            guard abs(Int(timestamp) - response.timestamp) < 24 * 60 * 60 else { // 1 day
+                throw ResponseError.returnedTimestampIsTooInaccurate
+            }
+
+            try? storage.save(coinHistoricalPrice: CoinHistoricalPrice(coinUid: coinUid, currencyCode: currencyCode, value: response.price, timestamp: timestamp))
+
+            return response.price
         }
+    }
+}
+
+extension CoinHistoricalPriceManager {
+
+    func safeCoinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> Decimal {
+        
+        let response = try await hsProvider.safeHistoricalCoinPrice(coinUid: "safe-anwang", currencyCode: currencyCode, timestamp: timestamp)
 
         try? storage.save(coinHistoricalPrice: CoinHistoricalPrice(coinUid: coinUid, currencyCode: currencyCode, value: response.price, timestamp: timestamp))
 

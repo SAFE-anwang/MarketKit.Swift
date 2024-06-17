@@ -25,3 +25,21 @@ public extension TimeInterval {
         count * hours(24)
     }
 }
+
+
+public let safeCoinUid = "safe-anwang"
+public let safe4CoinUid = "safe4-anwang"
+
+public extension String {
+    var isSafeCoin: Bool {
+        let safeUids = [safeCoinUid, safe4CoinUid]
+        return safeUids.contains(self)
+    }
+}
+
+public extension Coin {
+    var isSafeCoin: Bool {
+        uid.isSafeCoin
+    }
+}
+
