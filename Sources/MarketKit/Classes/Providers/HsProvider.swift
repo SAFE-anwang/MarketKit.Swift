@@ -139,7 +139,7 @@ extension HsProvider {
             "currency": currencyCode.lowercased(),
             "language": languageCode.lowercased(),
         ]
-
+        let baseUrl = coinUid.isSafeCoin ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)", method: .get, parameters: parameters, headers: headers(apiTag: apiTag))
     }
 
@@ -230,12 +230,12 @@ extension HsProvider {
             "currency": currencyCode.lowercased(),
             "timestamp": Int(timestamp),
         ]
-
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)/price_history", method: .get, parameters: parameters, headers: headers())
     }
 
     func coinPriceChartStart(coinUid: String) async throws -> ChartStart {
-        try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)/price_chart_start", method: .get, headers: headers())
+        let baseUrl = coinUid.isSafeCoin ? safeBaseUrl : baseUrl
+        return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)/price_chart_start", method: .get, headers: headers())
     }
 
     func topPlatformMarketCapStart(platform: String) async throws -> ChartStart {
