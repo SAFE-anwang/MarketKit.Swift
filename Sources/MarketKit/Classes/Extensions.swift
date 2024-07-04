@@ -29,11 +29,16 @@ public extension TimeInterval {
 
 public let safeCoinUid = "safe-anwang"
 public let safe4CoinUid = "safe4-anwang"
+public let isSafe4TestNet = true
 
 public extension String {
     var isSafeCoin: Bool {
         let safeUids = [safeCoinUid, safe4CoinUid]
         return safeUids.contains(self)
+    }
+    
+    var isSafe4Test: Bool {
+        self == safe4CoinUid && isSafe4TestNet
     }
 }
 

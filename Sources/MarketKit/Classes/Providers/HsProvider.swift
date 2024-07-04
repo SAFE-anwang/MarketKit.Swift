@@ -563,7 +563,7 @@ extension HsProvider {
     struct SafeCoinHistoricalPriceResponse: ImmutableMappable {
         let price: Decimal
         init(map: Map) throws {
-            price = try map.value("market_data.current_price.usd", using: Transform.stringToDecimalTransform)
+            price = try map.value("market_data.current_price.usd", using: Transform.doubleToDecimalTransform)
         }
     }
 }
