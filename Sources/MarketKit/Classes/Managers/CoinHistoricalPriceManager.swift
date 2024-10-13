@@ -38,7 +38,6 @@ extension CoinHistoricalPriceManager {
 extension CoinHistoricalPriceManager {
 
     func safeCoinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> Decimal {
-        if coinUid.isSafe4Test { return 0 }
         let oneYearAgo = Calendar.current.date(byAdding: .year, value: -1, to: Date())!
         let oneYearAgoTimestamp = oneYearAgo.timeIntervalSince1970
         guard timestamp > oneYearAgoTimestamp else {throw ResponseError.historicalPriceTimestampIsTimeLimitExceeded }

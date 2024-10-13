@@ -29,7 +29,7 @@ public extension TimeInterval {
 
 public let safeCoinUid = "safe-anwang"
 public let safe4CoinUid = "safe4-anwang"
-public let isSafe4TestNet = true
+public let isSafe4TestNet = false
 
 public extension String {
     var isSafeCoin: Bool {
