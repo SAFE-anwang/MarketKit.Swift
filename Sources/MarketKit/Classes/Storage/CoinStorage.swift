@@ -358,7 +358,32 @@ extension CoinStorage {
                          "blockchain_uid": "\(safe4CoinUid)",
                          "decimals": 18,
                          "type": "native"
-                         }]
+                         },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "\(safe4CoinUid)",
+                         "address": "0x0000000000000000000000000000000000001101",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "ethereum",
+                         "address": "0x96f59c9d155d598d4f895f07dd6991ccb5fa7dc7",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "binance-smart-chain",
+                         "address": "0x3a5557ad6fa16699dd56fd0e418c70c83e42240a",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "polygon-pos",
+                         "address": "0xe0d3ff9b473976855b2242a1a022ac66f980ce50",
+                         "decimals": 18,
+                         "type": "eip20"
+                        }
+                        ]
                         """
         guard let safeTokens = [TokenRecord](JSONString: tokensStr)
         else {
