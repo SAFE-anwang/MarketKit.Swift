@@ -57,4 +57,12 @@ extension CoinPriceStorage {
             }
         }
     }
+    
+    func delete(coinPrice coinUid: String) throws {
+        _ = try dbPool.write { db in
+            try CoinPrice
+                .filter(CoinPrice.Columns.coinUid == coinUid)
+                .fetchOne(db)
+        }
+    }
 }

@@ -343,7 +343,7 @@ extension CoinStorage {
 extension CoinStorage {
     func safe4Coin() -> [Coin] {
         let coinsStr = """
-                        [{"uid":"\(safe4CoinUid)","name":"SAFE4", "code":"SAFE4"}]
+                        [{"uid":"\(safe4CoinUid)","name":"SAFE", "code":"SAFE"}]
                        """
         guard let safeCoins = [Coin](JSONString: coinsStr)
         else {
@@ -352,26 +352,6 @@ extension CoinStorage {
         return safeCoins
     }
     
-    /*
-    {"coin_uid":"\(safe4CoinUid)",
-     "blockchain_uid": "ethereum",
-     "address": "0x96f59c9d155d598d4f895f07dd6991ccb5fa7dc7",
-     "decimals": 18,
-     "type": "eip20"
-    },
-    {"coin_uid":"\(safe4CoinUid)",
-     "blockchain_uid": "binance-smart-chain",
-     "address": "0x3a5557ad6fa16699dd56fd0e418c70c83e42240a",
-     "decimals": 18,
-     "type": "eip20"
-    },
-    {"coin_uid":"\(safe4CoinUid)",
-     "blockchain_uid": "polygon-pos",
-     "address": "0xe0d3ff9b473976855b2242a1a022ac66f980ce50",
-     "decimals": 18,
-     "type": "eip20"
-    }
-    */
     func safe4Token() -> [TokenRecord] {
         let tokensStr = """
                         [{"coin_uid": "\(safe4CoinUid)",
@@ -396,7 +376,7 @@ extension CoinStorage {
     
     func safe4Blockchain() -> [BlockchainRecord] {
         let blockchainStr = """
-                            [{"uid":"\(safe4CoinUid)","name":"SAFE4","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
+                            [{"uid":"\(safe4CoinUid)","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
                             """
         guard let safeBlockchainRecords = [BlockchainRecord](JSONString: blockchainStr)
         else {
@@ -406,7 +386,28 @@ extension CoinStorage {
         return safeBlockchainRecords
     }
 }
-
+extension CoinStorage {
+    
+    func insertToken(record: TokenRecord) throws {
+        _ = try dbPool.write { db in
+            try? record.insert(db)
+        }
+    }
+    
+    func removeToken(coinUid: String, reference: String) throws {
+        _ = try dbPool.write { db in
+            try TokenRecord
+                .filter(TokenRecord.Columns.coinUid == coinUid && TokenRecord.Columns.reference == reference)
+                .deleteAll(db)
+        }
+    }
+    
+    func insertCoin(coin: Coin) throws {
+        _ = try dbPool.write { db in
+            try coin.insert(db)
+        }
+    }
+}
 struct CoinTokensRecord: FetchableRecord, Decodable {
     let coin: Coin
     let tokens: [TokenBlockchainRecord]

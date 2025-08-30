@@ -111,3 +111,18 @@ extension CoinManager {
         }
     }
 }
+
+extension CoinManager {
+    
+    func insertToken(record: TokenRecord) throws {
+        try storage.insertToken(record: record)
+    }
+    
+    func removeToken(coinUid: String, reference: String) throws {
+        try storage.removeToken(coinUid: coinUid, reference: reference)
+    }
+    
+    func insertCoin(coin: Coin) throws {
+        try storage.insertCoin(coin: coin)
+    }
+}

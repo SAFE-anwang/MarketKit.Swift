@@ -103,6 +103,19 @@ public extension Kit {
     func blockchain(uid: String) throws -> Blockchain? {
         try coinManager.blockchain(uid: uid)
     }
+    
+    func insertToken(coinUid: String, blockchainUid: String, type: String, decimals: Int? = nil, reference: String? = nil) throws {
+        let record = TokenRecord(coinUid: coinUid, blockchainUid: blockchainUid, type: type, decimals: decimals, reference: reference)
+        try coinManager.insertToken(record: record)
+    }
+    
+    func removeToken(coinUid: String, reference: String) throws {
+        try coinManager.removeToken(coinUid: coinUid, reference: reference)
+    }
+    
+    func insertCoin(coin: Coin) throws {
+        try coinManager.insertCoin(coin: coin)
+    }
 
     // Market Info
 
