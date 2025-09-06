@@ -200,7 +200,7 @@ extension HsProvider {
 
     func coinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
         var parameters: Parameters = [
-            "uids": coinUids.filter{ $0 != safeCoinUid }.joined(separator: ","),
+            "uids": coinUids.filter{ !$0.isSafeCoin }.joined(separator: ","),
             "currency": currencyCode.lowercased(),
             "fields": "price,price_change_24h,last_updated",
         ]
@@ -208,7 +208,7 @@ extension HsProvider {
         if !walletCoinUids.isEmpty {
             parameters["enabled_uids"] = walletCoinUids.joined(separator: ",")
         }
-        if coinUids.contains(safeCoinUid) || coinUids.contains(safe4CoinUid) {
+        if coinUids.filter({$0.isSafeCoin}).count > 0 {
             let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers(apiTag: "coin_prices"))
 
             let safeParameters = [

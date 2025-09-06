@@ -35,7 +35,7 @@ public let SAFE4_Custom_CoinUid = "custom-safe4-anwang"
 public extension String {
     var isSafeCoin: Bool {
         let safeUids = [safeCoinUid, safe4CoinUid]
-        return safeUids.contains(self)
+        return safeUids.contains(self) || isSafeFourCustomCoin
     }
     
     var isSafe4Test: Bool {

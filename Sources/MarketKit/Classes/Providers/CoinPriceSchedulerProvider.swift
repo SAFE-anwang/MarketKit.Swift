@@ -48,11 +48,12 @@ extension CoinPriceSchedulerProvider: ISchedulerProvider {
         var coinPrices = try await provider.coinPrices(coinUids: coinUids, walletCoinUids: walletCoinUids, currencyCode: currencyCode)
         
         // add safe4 CoinPrice
-        if let price = coinPrices.filter({ $0.coinUid.isSafeCoin }).first {
-            let safe4CoinPrice = CoinPrice(coinUid: safe4CoinUid, currencyCode: price.currencyCode, value: price.value, diff: price.diff, timestamp: price.timestamp)
-            coinPrices.append(safe4CoinPrice)
+        coinPrices
+            .filter{ $0.coinUid.isSafeCoin }
+            .forEach{ price in
+                let safe4CoinPrice = CoinPrice(coinUid: price.coinUid, currencyCode: price.currencyCode, value: price.value, diff: price.diff, timestamp: price.timestamp)
+                coinPrices.append(safe4CoinPrice)
         }
-        
         handle(updatedCoinPrices: coinPrices)
     }
 
