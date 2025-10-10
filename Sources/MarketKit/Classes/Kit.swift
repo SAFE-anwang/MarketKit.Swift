@@ -117,6 +117,9 @@ public extension Kit {
         try coinManager.insertCoin(coin: coin)
     }
 
+    func removeCoin(uid: String) throws {
+        try coinManager.removeCoin(uid: uid)
+    }
     // Market Info
 
     func marketInfos(top: Int = 250, currencyCode: String, defi: Bool = false, apiTag: String) async throws -> [MarketInfo] {

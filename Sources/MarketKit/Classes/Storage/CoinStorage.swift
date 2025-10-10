@@ -390,10 +390,9 @@ extension CoinStorage {
     
     func insertToken(record: TokenRecord) throws {
         _ = try dbPool.write { db in
-            try? record.insert(db)
+            try? record.save(db)//insert(db)
         }
     }
-    
     func removeToken(coinUid: String, reference: String) throws {
         _ = try dbPool.write { db in
             try TokenRecord
@@ -404,7 +403,19 @@ extension CoinStorage {
     
     func insertCoin(coin: Coin) throws {
         _ = try dbPool.write { db in
-            try coin.insert(db)
+            try Coin
+                .filter(Coin.Columns.uid == coin.uid)
+                .deleteAll(db)
+            
+            try coin.save(db)//insert(db)
+        }
+    }
+    
+    func removeCoin(uid: String) throws {
+        _ = try dbPool.write { db in
+            try Coin
+                .filter(Coin.Columns.uid == uid)
+                .deleteAll(db)
         }
     }
 }

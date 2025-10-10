@@ -125,4 +125,8 @@ extension CoinManager {
     func insertCoin(coin: Coin) throws {
         try storage.insertCoin(coin: coin)
     }
+    
+    func removeCoin(uid: String) throws {
+        try storage.removeCoin(uid: uid)
+    }
 }
