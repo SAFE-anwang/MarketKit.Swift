@@ -6,9 +6,9 @@ public enum BlockchainType {
     case dogecoin
     case dash
     case zcash
+    case monero
     case ethereum
     case binanceSmartChain
-    case binanceChain
     case polygon
     case avalanche
     case optimism
@@ -20,6 +20,9 @@ public enum BlockchainType {
     case safe
     case safe4
     case ton
+    case base
+    case zkSync
+    case stellar
     case unsupported(uid: String)
 
     public init(uid: String) {
@@ -31,9 +34,9 @@ public enum BlockchainType {
         case "dogecoin": self = .dogecoin
         case "dash": self = .dash
         case "zcash": self = .zcash
+        case "monero": self = .monero
         case "ethereum": self = .ethereum
         case "binance-smart-chain": self = .binanceSmartChain
-        case "binancecoin": self = .binanceChain
         case "polygon-pos": self = .polygon
         case "avalanche": self = .avalanche
         case "optimistic-ethereum": self = .optimism
@@ -45,6 +48,9 @@ public enum BlockchainType {
         case "safe-anwang": self = .safe
         case "safe4-anwang": self = .safe4
         case "the-open-network": self = .ton
+        case "base": self = .base
+        case "zksync": self = .zkSync
+        case "stellar": self = .stellar
         default: self = .unsupported(uid: uid)
         }
     }
@@ -58,9 +64,9 @@ public enum BlockchainType {
         case .dogecoin: return "dogecoin"
         case .dash: return "dash"
         case .zcash: return "zcash"
+        case .monero: return "monero"
         case .ethereum: return "ethereum"
         case .binanceSmartChain: return "binance-smart-chain"
-        case .binanceChain: return "binancecoin"
         case .polygon: return "polygon-pos"
         case .avalanche: return "avalanche"
         case .optimism: return "optimistic-ethereum"
@@ -72,6 +78,9 @@ public enum BlockchainType {
         case .safe: return "safe-anwang"
         case .safe4: return "safe4-anwang"
         case .ton: return "the-open-network"
+        case .base: return "base"
+        case .zkSync: return "zksync"
+        case .stellar: return "stellar"
         case let .unsupported(uid): return uid
         
         }

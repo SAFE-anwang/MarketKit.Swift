@@ -52,7 +52,7 @@ extension CoinPriceSchedulerProvider: ISchedulerProvider {
             coinUids
                 .filter{ $0.isSafeCoin }
                 .forEach{ uid in
-                    let safe4CoinPrice = CoinPrice(coinUid: uid, currencyCode: price.currencyCode, value: price.value, diff: price.diff, timestamp: price.timestamp)
+                    let safe4CoinPrice = CoinPrice(coinUid: uid, currencyCode: price.currencyCode, value: price.value, diff24h: price.diff24h, diff1d: price.diff1d, timestamp: price.timestamp)
                     coinPrices.append(safe4CoinPrice)
             }
         }

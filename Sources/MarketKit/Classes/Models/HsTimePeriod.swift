@@ -1,6 +1,9 @@
 import Foundation
 
 public enum HsTimePeriod: String, CaseIterable {
+    static var chart: [Self] = [.day1, .week1, .week2, .month1, .month3, .month6, .year1, .year2, .year5]
+
+    case hour24 = "24h"
     case day1 = "1d"
     case week1 = "1w"
     case week2 = "2w"
@@ -9,11 +12,14 @@ public enum HsTimePeriod: String, CaseIterable {
     case month6 = "6m"
     case year1 = "1y"
     case year2 = "2y"
+    case year3 = "3y"
+    case year4 = "4y"
     case year5 = "5y"
 
-    var range: TimeInterval {
+    private var range: TimeInterval {
         switch self {
-        case .day1: return .days(1)
+        case .hour24: return .days(1)
+        case .day1: return 0
         case .week1: return .days(7)
         case .week2: return .days(14)
         case .month1: return .days(30)
@@ -21,8 +27,25 @@ public enum HsTimePeriod: String, CaseIterable {
         case .month6: return .days(180)
         case .year1: return .days(365)
         case .year2: return 2 * .days(365)
+        case .year3: return 3 * .days(365)
+        case .year4: return 4 * .days(365)
         case .year5: return 5 * .days(365)
         }
+    }
+
+    var startTimestamp: TimeInterval {
+        switch self {
+        case .day1:
+            return .midnightUTC() + .minutes(1)
+        default:
+            return Date().timeIntervalSince1970 - range
+        }
+    }
+}
+
+extension HsTimePeriod: Identifiable {
+    public var id: String {
+        rawValue
     }
 }
 

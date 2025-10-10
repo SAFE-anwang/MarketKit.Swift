@@ -13,9 +13,8 @@ public class Kit {
     private let postManager: PostManager
     private let globalMarketInfoManager: GlobalMarketInfoManager
     private let hsProvider: HsProvider
-    private let defiYieldProvider: DefiYieldProvider
 
-    init(coinManager: CoinManager, nftManager: NftManager, marketOverviewManager: MarketOverviewManager, hsDataSyncer: HsDataSyncer, coinSyncer: CoinSyncer, coinPriceManager: CoinPriceManager, coinPriceSyncManager: CoinPriceSyncManager, coinHistoricalPriceManager: CoinHistoricalPriceManager, postManager: PostManager, globalMarketInfoManager: GlobalMarketInfoManager, hsProvider: HsProvider, defiYieldProvider: DefiYieldProvider) {
+    init(coinManager: CoinManager, nftManager: NftManager, marketOverviewManager: MarketOverviewManager, hsDataSyncer: HsDataSyncer, coinSyncer: CoinSyncer, coinPriceManager: CoinPriceManager, coinPriceSyncManager: CoinPriceSyncManager, coinHistoricalPriceManager: CoinHistoricalPriceManager, postManager: PostManager, globalMarketInfoManager: GlobalMarketInfoManager, hsProvider: HsProvider) {
         self.coinManager = coinManager
         self.nftManager = nftManager
         self.marketOverviewManager = marketOverviewManager
@@ -27,7 +26,6 @@ public class Kit {
         self.postManager = postManager
         self.globalMarketInfoManager = globalMarketInfoManager
         self.hsProvider = hsProvider
-        self.defiYieldProvider = defiYieldProvider
 
         coinSyncer.initialSync()
     }
@@ -48,12 +46,12 @@ public extension Kit {
         coinSyncer.fullCoinsUpdatedPublisher
     }
 
-    func topFullCoins(limit: Int = 20) throws -> [FullCoin] {
-        try coinManager.topFullCoins(limit: limit)
+    func topFullCoins(limit: Int = 20, allowedBlockchainTypes: [BlockchainType]? = nil) throws -> [FullCoin] {
+        try coinManager.topFullCoins(limit: limit, allowedBlockchainTypes: allowedBlockchainTypes)
     }
 
-    func fullCoins(filter: String, limit: Int = 20) throws -> [FullCoin] {
-        try coinManager.fullCoins(filter: filter, limit: limit)
+    func fullCoins(filter: String, limit: Int = 20, allowedBlockchainTypes: [BlockchainType]? = nil) throws -> [FullCoin] {
+        try coinManager.fullCoins(filter: filter, limit: limit, allowedBlockchainTypes: allowedBlockchainTypes)
     }
 
     func fullCoins(coinUids: [String]) throws -> [FullCoin] {
@@ -122,8 +120,13 @@ public extension Kit {
     }
     // Market Info
 
-    func marketInfos(top: Int = 250, currencyCode: String, defi: Bool = false, apiTag: String) async throws -> [MarketInfo] {
-        let rawMarketInfos = try await hsProvider.marketInfos(top: top, currencyCode: currencyCode, defi: defi, apiTag: apiTag)
+    func marketInfos(top: Int = 250, currencyCode: String, defi: Bool = false) async throws -> [MarketInfo] {
+        let rawMarketInfos = try await hsProvider.marketInfos(top: top, currencyCode: currencyCode, defi: defi)
+        return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
+    }
+
+    func topCoinsMarketInfos(top: Int, currencyCode: String) async throws -> [MarketInfo] {
+        let rawMarketInfos = try await hsProvider.topCoinsMarketInfos(top: top, currencyCode: currencyCode)
         return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
     }
 
@@ -132,18 +135,22 @@ public extension Kit {
         return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
     }
 
-    func marketInfos(coinUids: [String], currencyCode: String, apiTag: String) async throws -> [MarketInfo] {
-        let rawMarketInfos = try await hsProvider.marketInfos(coinUids: coinUids, currencyCode: currencyCode, apiTag: apiTag)
+    func marketInfos(coinUids: [String], currencyCode: String) async throws -> [MarketInfo] {
+        let rawMarketInfos = try await hsProvider.marketInfos(coinUids: coinUids, currencyCode: currencyCode)
         return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
     }
 
-    func marketInfos(categoryUid: String, currencyCode: String, apiTag: String) async throws -> [MarketInfo] {
-        let rawMarketInfos = try await hsProvider.marketInfos(categoryUid: categoryUid, currencyCode: currencyCode, apiTag: apiTag)
+    func stocks(currencyCode: String) async throws -> [StockInfo] {
+        try await hsProvider.stocks(currencyCode: currencyCode)
+    }
+
+    func marketInfos(categoryUid: String, currencyCode: String) async throws -> [MarketInfo] {
+        let rawMarketInfos = try await hsProvider.marketInfos(categoryUid: categoryUid, currencyCode: currencyCode)
         return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
     }
 
-    func marketInfoOverview(coinUid: String, currencyCode: String, languageCode: String, apiTag: String) async throws -> MarketInfoOverview {
-        let response = try await hsProvider.marketInfoOverview(coinUid: coinUid, currencyCode: currencyCode, languageCode: languageCode, apiTag: apiTag)
+    func marketInfoOverview(coinUid: String, roiUids: [String] = [], roiPeriods: [HsTimePeriod] = [], currencyCode: String, languageCode: String) async throws -> MarketInfoOverview {
+        let response = try await hsProvider.marketInfoOverview(coinUid: coinUid, roiUids: roiUids, roiPeriods: roiPeriods, currencyCode: currencyCode, languageCode: languageCode)
 
         guard let fullCoin = try? coinManager.fullCoin(uid: coinUid) else {
             throw Kit.KitError.noFullCoin
@@ -152,16 +159,12 @@ public extension Kit {
         return response.marketInfoOverview(fullCoin: fullCoin)
     }
 
-    func marketTickers(coinUid: String) async throws -> [MarketTicker] {
-        try await hsProvider.marketTickers(coinUid: coinUid)
+    func marketTickers(coinUid: String, currencyCode: String) async throws -> [MarketTicker] {
+        try await hsProvider.marketTickers(coinUid: coinUid, currencyCode: currencyCode)
     }
 
     func tokenHolders(coinUid: String, blockchainUid: String) async throws -> TokenHolders {
         try await hsProvider.tokenHolders(coinUid: coinUid, blockchainUid: blockchainUid)
-    }
-
-    func auditReports(addresses: [String]) async throws -> [Auditor] {
-        try await defiYieldProvider.auditReports(addresses: addresses)
     }
 
     func investments(coinUid: String) async throws -> [CoinInvestment] {
@@ -180,8 +183,8 @@ public extension Kit {
         try await hsProvider.marketInfoGlobalTvl(platform: platform, currencyCode: currencyCode, timePeriod: timePeriod)
     }
 
-    func defiCoins(currencyCode: String, apiTag: String) async throws -> [DefiCoin] {
-        let rawDefiCoins = try await hsProvider.defiCoins(currencyCode: currencyCode, apiTag: apiTag)
+    func defiCoins(currencyCode: String) async throws -> [DefiCoin] {
+        let rawDefiCoins = try await hsProvider.defiCoins(currencyCode: currencyCode)
         return coinManager.defiCoins(rawDefiCoins: rawDefiCoins)
     }
 
@@ -191,8 +194,8 @@ public extension Kit {
 
     // Categories
 
-    func coinCategories(currencyCode: String) async throws -> [CoinCategory] {
-        try await hsProvider.coinCategories(currencyCode: currencyCode)
+    func coinCategories(currencyCode: String, withTopCoins: Bool = false) async throws -> [CoinCategory] {
+        try await hsProvider.coinCategories(currencyCode: currencyCode, withTopCoins: withTopCoins)
     }
 
     func coinCategoryMarketCapChart(category: String, currencyCode: String?, timePeriod: HsTimePeriod) async throws -> [CategoryMarketPoint] {
@@ -213,12 +216,12 @@ public extension Kit {
         coinPriceManager.coinPriceMap(coinUids: coinUids, currencyCode: currencyCode)
     }
 
-    func coinPricePublisher(tag: String, coinUid: String, currencyCode: String) -> AnyPublisher<CoinPrice, Never> {
-        coinPriceSyncManager.coinPricePublisher(tag: tag, coinUid: coinUid, currencyCode: currencyCode)
+    func coinPricePublisher(coinUid: String, currencyCode: String) -> AnyPublisher<CoinPrice, Never> {
+        coinPriceSyncManager.coinPricePublisher(coinUid: coinUid, currencyCode: currencyCode)
     }
 
-    func coinPriceMapPublisher(tag: String, coinUids: [String], currencyCode: String) -> AnyPublisher<[String: CoinPrice], Never> {
-        coinPriceSyncManager.coinPriceMapPublisher(tag: tag, coinUids: coinUids, currencyCode: currencyCode)
+    func coinPriceMapPublisher(coinUids: [String], currencyCode: String) -> AnyPublisher<[String: CoinPrice], Never> {
+        coinPriceSyncManager.coinPriceMapPublisher(coinUids: coinUids, currencyCode: currencyCode)
     }
 
     // Coin Historical Prices
@@ -255,12 +258,12 @@ public extension Kit {
         switch periodType {
         case let .byPeriod(timePeriod):
             interval = HsChartHelper.pointInterval(timePeriod)
-            visibleTimestamp = Date().timeIntervalSince1970 - timePeriod.range
+            visibleTimestamp = timePeriod.startTimestamp
             fromTimestamp = visibleTimestamp
         case let .byCustomPoints(timePeriod, pointCount): // custom points needed to build chart indicators
             interval = HsChartHelper.pointInterval(timePeriod)
             let customPointInterval = interval.interval * TimeInterval(pointCount)
-            visibleTimestamp = Date().timeIntervalSince1970 - timePeriod.range
+            visibleTimestamp = timePeriod.startTimestamp
             fromTimestamp = visibleTimestamp - customPointInterval
         case let .byStartTime(startTime):
             interval = HsChartHelper.intervalForAll(genesisTime: startTime)
@@ -299,7 +302,27 @@ public extension Kit {
     // Pairs
 
     func topPairs(currencyCode: String) async throws -> [MarketPair] {
-        try await hsProvider.topPairs(currencyCode: currencyCode)
+        let responses = try await hsProvider.topPairs(currencyCode: currencyCode)
+        let uids = responses.compactMap(\.baseCoinUid) + responses.compactMap(\.targetCoinUid)
+        let coins = try coinManager.coins(uids: Array(Set(uids)))
+        let coinsDictionary = Dictionary(grouping: coins, by: { $0.uid })
+
+        return responses.map { response in
+            MarketPair(
+                base: response.base,
+                baseCoinUid: response.baseCoinUid,
+                target: response.target,
+                targetCoinUid: response.targetCoinUid,
+                marketName: response.marketName,
+                marketImageUrl: response.marketImageUrl,
+                rank: response.rank,
+                volume: response.volume,
+                price: response.price,
+                tradeUrl: response.tradeUrl,
+                baseCoin: response.baseCoinUid.flatMap { coinsDictionary[$0]?.first },
+                targetCoin: response.targetCoinUid.flatMap { coinsDictionary[$0]?.first }
+            )
+        }
     }
 
     // Platforms
@@ -309,8 +332,8 @@ public extension Kit {
         return responses.map(\.topPlatform)
     }
 
-    func topPlatformMarketInfos(blockchain: String, currencyCode: String, apiTag: String) async throws -> [MarketInfo] {
-        let rawMarketInfos = try await hsProvider.topPlatformCoinsList(blockchain: blockchain, currencyCode: currencyCode, apiTag: apiTag)
+    func topPlatformMarketInfos(blockchain: String, currencyCode: String) async throws -> [MarketInfo] {
+        let rawMarketInfos = try await hsProvider.topPlatformCoinsList(blockchain: blockchain, currencyCode: currencyCode)
         return coinManager.marketInfos(rawMarketInfos: rawMarketInfos)
     }
 
@@ -329,14 +352,34 @@ public extension Kit {
         )
     }
 
-    // Pro Data
+    // Etf
 
-    func analytics(coinUid: String, currencyCode: String, apiTag: String) async throws -> Analytics {
-        try await hsProvider.analytics(coinUid: coinUid, currencyCode: currencyCode, apiTag: apiTag)
+    func etfs(category: String, currencyCode: String) async throws -> [Etf] {
+        try await hsProvider.etfs(category: category, currencyCode: currencyCode)
     }
 
-    func analyticsPreview(coinUid: String, apiTag: String) async throws -> AnalyticsPreview {
-        try await hsProvider.analyticsPreview(coinUid: coinUid, apiTag: apiTag)
+    func etfPoints(category: String, currencyCode: String, timePeriod: HsTimePeriod?) async throws -> [EtfPoint] {
+        try await hsProvider.etfPoints(category: category, currencyCode: currencyCode, timePeriod: timePeriod)
+    }
+
+    // Vaults
+
+    func vaults(currencyCode: String) async throws -> [Vault] {
+        try await hsProvider.vaults(currencyCode: currencyCode)
+    }
+
+    func vault(address: String, currencyCode: String, timePeriod: HsTimePeriod) async throws -> Vault {
+        try await hsProvider.vault(address: address, currencyCode: currencyCode, timePeriod: timePeriod)
+    }
+
+    // Pro Data
+
+    func analytics(coinUid: String, currencyCode: String) async throws -> Analytics {
+        try await hsProvider.analytics(coinUid: coinUid, currencyCode: currencyCode)
+    }
+
+    func analyticsPreview(coinUid: String) async throws -> AnalyticsPreview {
+        try await hsProvider.analyticsPreview(coinUid: coinUid)
     }
 
     func cexVolumes(coinUid: String, currencyCode: String, timePeriod: HsTimePeriod) async throws -> AggregatedChartPoints {
@@ -344,7 +387,7 @@ public extension Kit {
             coinUid: coinUid,
             currencyCode: currencyCode,
             interval: .day1,
-            fromTimestamp: Date().timeIntervalSince1970 - timePeriod.range
+            fromTimestamp: timePeriod.startTimestamp
         )
 
         let points = responses.compactMap(\.volumeChartPoint)
@@ -419,6 +462,10 @@ public extension Kit {
 
     // Overview
 
+    func marketGlobal(currencyCode: String) async throws -> MarketGlobal {
+        try await hsProvider.marketGlobal(currencyCode: currencyCode)
+    }
+
     func marketOverview(currencyCode: String) async throws -> MarketOverview {
         try await marketOverviewManager.marketOverview(currencyCode: currencyCode)
     }
@@ -455,14 +502,27 @@ public extension Kit {
         try await hsProvider.authenticate(signature: signature, address: address)
     }
 
-    func requestPersonalSupport(telegramUsername: String) async throws {
-        try await hsProvider.requestPersonalSupport(telegramUsername: telegramUsername)
+    func requestPersonalSupport(jws: String) async throws -> String {
+        try await hsProvider.requestPersonalSupport(jws: jws)
+    }
+
+    // Signals
+
+    func signals(coinUids: [String]) async throws -> [String: TechnicalAdvice.Advice] {
+        let responses = try await hsProvider.signals(coinUids: coinUids)
+        return responses.reduce(into: [String: TechnicalAdvice.Advice]()) { $0[$1.uid] = $1.signal }
     }
 
     // Misc
 
     func syncInfo() -> SyncInfo {
         coinSyncer.syncInfo()
+    }
+
+    // Stats
+
+    func send(stats: Any, appVersion: String, appId: String?) async throws {
+        try await hsProvider.send(stats: stats, appVersion: appVersion, appId: appId)
     }
 }
 
