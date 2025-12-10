@@ -1,5 +1,6 @@
 import GRDB
 
+
 class CoinStorage {
     private let dbPool: DatabasePool
 
@@ -284,9 +285,9 @@ extension CoinStorage {
     
     func update(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) throws {
         
-        let coins = coins + safeCoin() + safe4Coin()
+        let coins = coins + safeCoin() + safe4Coin() + safe4UsdtCoin()
         let blockchainRecords = blockchainRecords + safeBlockchain() + safe4Blockchain()
-        let tokenRecords = tokenRecords + safeToken() + safe4Token()
+        let tokenRecords = tokenRecords + safeToken() + safe4Token() + safe4UsdtToken()
         
         _ = try dbPool.write { db in
             try Coin.deleteAll(db)
@@ -411,6 +412,37 @@ extension CoinStorage {
         }
         
         return safeBlockchainRecords
+    }
+}
+
+extension CoinStorage {
+    func safe4UsdtCoin() -> [Coin] {
+        let coinsStr = """
+                        [{"uid":"\(safe4UsdtCoinUid)","name":"USDT", "code":"SAFE"}]
+                       """
+        guard let safeCoins = [Coin](JSONString: coinsStr)
+        else {
+            return []
+        }
+        return safeCoins
+    }
+    
+    func safe4UsdtToken() -> [TokenRecord] {
+        let tokensStr = """
+                        [
+                        {"coin_uid":"\(safe4UsdtCoinUid)",
+                         "blockchain_uid": "\(safe4CoinUid)",
+                         "address": "\(safe4UsdtContract)",
+                         "decimals": 6,
+                         "type": "eip20"
+                        }
+                        ]
+                        """
+        guard let safeTokens = [TokenRecord](JSONString: tokensStr)
+        else {
+            return []
+        }
+        return safeTokens
     }
 }
 extension CoinStorage {
