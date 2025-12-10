@@ -57,12 +57,13 @@ class FullCoinsController: UIViewController {
     private func syncCoins() {
         do {
             // add custom coin、token
-            try Singleton.instance.kit.insertCoin(coin: Coin(uid: "custom-safe4-anwang", name: "SAFE4-Test", code: "SAFE4-Test"))
-            try Singleton.instance.kit.insertToken(coinUid: "custom-safe4-anwang", blockchainUid: "safe4-anwang", type: "eip20", reference: "0xcbfBb7C9c45C4dA08174A6D4266B49AC46f8b03C")
-            // remove custom Token
-            try Singleton.instance.kit.removeToken(coinUid: "custom-safe4-anwang", reference: "0xcbfBb7C9c45C4dA08174A6D4266B49AC46f8b03C")
+//            try Singleton.instance.kit.insertCoin(coin: Coin(uid: "custom-safe4-anwang", name: "SAFE4-Test", code: "SAFE4-Test"))
+//            try Singleton.instance.kit.insertToken(coinUid: "custom-safe4-anwang", blockchainUid: "safe4-anwang", type: "eip20", reference: "0xcbfBb7C9c45C4dA08174A6D4266B49AC46f8b03C")
+//            // remove custom Token
+//            try Singleton.instance.kit.removeToken(coinUid: "custom-safe4-anwang", reference: "0xcbfBb7C9c45C4dA08174A6D4266B49AC46f8b03C")
             
-            fullCoins = try Singleton.instance.kit.fullCoins(filter: currentFilter)
+            fullCoins = try Singleton.instance.kit.fullCoins(filter: "USDT")
+            let coins = try Singleton.instance.kit.fullCoins(coinUids: [safe4UsdtCoinUid])
             tableView.reloadData()
         } catch {
             print("Failed to sync coins: \(error)")

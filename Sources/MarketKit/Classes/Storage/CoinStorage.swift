@@ -287,7 +287,7 @@ extension CoinStorage {
         
         let coins = coins + safeCoin() + safe4Coin() + safe4UsdtCoin()
         let blockchainRecords = blockchainRecords + safeBlockchain() + safe4Blockchain()
-        let tokenRecords = tokenRecords + safeToken() + safe4Token() + safe4UsdtToken()
+        let tokenRecords = tokenRecords + safeToken() + safe4Token()
         
         _ = try dbPool.write { db in
             try Coin.deleteAll(db)
@@ -345,7 +345,8 @@ extension CoinStorage {
                          "address": "0xb7Dd19490951339fE65E341Df6eC5f7f93FF2779",
                          "decimals": 18,
                          "type": "eip20"
-                        }]
+                        }
+                        ]
                         """
         guard let safeTokens = [TokenRecord](JSONString: tokensStr)
         else {
@@ -392,6 +393,12 @@ extension CoinStorage {
                          "address": "0x0000000000000000000000000000000000001101",
                          "decimals": 18,
                          "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4UsdtCoinUid)",
+                         "blockchain_uid": "\(safe4CoinUid)",
+                         "address": "\(safe4UsdtContract)",
+                         "decimals": 6,
+                         "type": "eip20"
                         }
                         ]
                         """
@@ -418,31 +425,13 @@ extension CoinStorage {
 extension CoinStorage {
     func safe4UsdtCoin() -> [Coin] {
         let coinsStr = """
-                        [{"uid":"\(safe4UsdtCoinUid)","name":"USDT", "code":"SAFE"}]
+                        [{"uid":"\(safe4UsdtCoinUid)","name":"SAFE USDT", "code":"USDT"}]
                        """
         guard let safeCoins = [Coin](JSONString: coinsStr)
         else {
             return []
         }
         return safeCoins
-    }
-    
-    func safe4UsdtToken() -> [TokenRecord] {
-        let tokensStr = """
-                        [
-                        {"coin_uid":"\(safe4UsdtCoinUid)",
-                         "blockchain_uid": "\(safe4CoinUid)",
-                         "address": "\(safe4UsdtContract)",
-                         "decimals": 6,
-                         "type": "eip20"
-                        }
-                        ]
-                        """
-        guard let safeTokens = [TokenRecord](JSONString: tokensStr)
-        else {
-            return []
-        }
-        return safeTokens
     }
 }
 extension CoinStorage {
