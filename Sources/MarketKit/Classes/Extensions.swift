@@ -43,13 +43,17 @@ public extension TimeInterval {
     }
 }
 
-
+public let isSafe4TestNet = false
 public let safeCoinUid = "safe-anwang"
 public let safe4CoinUid = "safe4-anwang"
-public let isSafe4TestNet = false
+public let safe4BlockchainUid = "safe4-anwang"
 public let SAFE4_Custom_CoinUid = "custom-safe4-anwang"
 public let safe4UsdtCoinUid = "Safe4USDT"
 public let safe4UsdtContract = "0x9c1246a4bb3c57303587e594a82632c3171662c9"
+public let safe4EthContract = "0xee9c1ea4dcf0aaf4ff2d78b6ff83aa69797b65eb"
+public let safe4BscContract = "0x4d7fa587ec8e50bd0e9cd837cb4da796f47218a1"
+public let safe4PolContract = "0xb7Dd19490951339fE65E341Df6eC5f7f93FF2779"
+public let safe4SrcContract = "0x0000000000000000000000000000000000001101"
 
 public extension String {
 

@@ -384,18 +384,36 @@ extension CoinStorage {
     func safe4Token() -> [TokenRecord] {
         let tokensStr = """
                         [{"coin_uid": "\(safe4CoinUid)",
-                         "blockchain_uid": "\(safe4CoinUid)",
+                         "blockchain_uid": "\(safe4BlockchainUid)",
                          "decimals": 18,
                          "type": "native"
                          },
                         {"coin_uid":"\(safe4CoinUid)",
-                         "blockchain_uid": "\(safe4CoinUid)",
-                         "address": "0x0000000000000000000000000000000000001101",
+                         "blockchain_uid": "\(safe4BlockchainUid)",
+                         "address": "\(safe4SrcContract)",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "ethereum",
+                         "address": "\(safe4EthContract)",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "binance-smart-chain",
+                         "address": "\(safe4BscContract)",
+                         "decimals": 18,
+                         "type": "eip20"
+                        },
+                        {"coin_uid":"\(safe4CoinUid)",
+                         "blockchain_uid": "polygon-pos",
+                         "address": "\(safe4PolContract)",
                          "decimals": 18,
                          "type": "eip20"
                         },
                         {"coin_uid":"\(safe4UsdtCoinUid)",
-                         "blockchain_uid": "\(safe4CoinUid)",
+                         "blockchain_uid": "\(safe4BlockchainUid)",
                          "address": "\(safe4UsdtContract)",
                          "decimals": 6,
                          "type": "eip20"
@@ -411,7 +429,7 @@ extension CoinStorage {
     
     func safe4Blockchain() -> [BlockchainRecord] {
         let blockchainStr = """
-                            [{"uid":"\(safe4CoinUid)","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
+                            [{"uid":"\(safe4BlockchainUid)","name":"SAFE","explorerUrl":"https://anwang.com/img/logos/safe.png"}]
                             """
         guard let safeBlockchainRecords = [BlockchainRecord](JSONString: blockchainStr)
         else {
