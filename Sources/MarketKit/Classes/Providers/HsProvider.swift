@@ -128,7 +128,7 @@ extension HsProvider {
             "fields": "price,price_change_24h,price_change_1d,price_change_7d,price_change_30d,price_change_90d,market_cap,market_cap_rank,total_volume",
             "currency": currencyCode.lowercased(),
         ]
-        let baseUrl = coinUids.contains(safeCoinUid) ? safeBaseUrl : baseUrl
+        let baseUrl = (coinUids.contains(safeCoinUid) || coinUids.contains(safe4CoinUid)) ? safeBaseUrl : baseUrl
         return try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
     }
 
@@ -276,8 +276,9 @@ extension HsProvider {
         if let fromTimestamp {
             parameters["from_timestamp"] = Int(fromTimestamp)
         }
-        let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
-        return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(coinUid)/price_chart", method: .get, parameters: parameters, headers: headers)
+        let baseUrl = coinUid.isSafeCoin ? safeBaseUrl : baseUrl
+        let uid = coinUid.isSafeCoin ? safeCoinUid : coinUid
+        return try await networkManager.fetch(url: "\(baseUrl)/v1/coins/\(uid)/price_chart", method: .get, parameters: parameters, headers: headers)
     }
 
     // Holders
@@ -287,7 +288,8 @@ extension HsProvider {
             "blockchain_uid": blockchainUid,
         ]
         let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
-        return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(coinUid)/holders", method: .get, parameters: parameters, headers: proHeaders)
+        let uid = coinUid.isSafeCoin ? safeCoinUid : coinUid
+        return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(uid)/holders", method: .get, parameters: parameters, headers: proHeaders)
     }
 
     // Funds
@@ -449,7 +451,8 @@ extension HsProvider {
             "currency": currencyCode.lowercased(),
         ]
         let baseUrl = coinUid == safeCoinUid ? safeBaseUrl : baseUrl
-        return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(coinUid)", method: .get, parameters: parameters, headers: proHeaders)
+        let uid = coinUid.isSafeCoin ? safeCoinUid : coinUid
+        return try await networkManager.fetch(url: "\(baseUrl)/v1/analytics/\(uid)", method: .get, parameters: parameters, headers: proHeaders)
     }
 
     func analyticsPreview(coinUid: String) async throws -> AnalyticsPreview {
