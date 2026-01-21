@@ -46,6 +46,11 @@ public extension TimeInterval {
 public let isSafe4TestNet = false
 public let safeCoinUid = "safe-anwang"
 public let safe4CoinUid = "safe4-anwang"
+public let safe4CoinUid_src = "\(SAFE4_Custom_CoinUid)|eip20:\(safe4SrcContract)"
+public let safe4CoinUid_eth = "\(SAFE4_Custom_CoinUid)|eip20:\(safe4EthContract)"
+public let safe4CoinUid_bsc = "\(SAFE4_Custom_CoinUid)|eip20:\(safe4BscContract)"
+public let safe4CoinUid_pol = "\(SAFE4_Custom_CoinUid)|eip20:\(safe4PolContract)"
+
 public let safe4BlockchainUid = "safe4-anwang"
 public let SAFE4_Custom_CoinUid = "custom-safe4-anwang"
 public let safe4UsdtCoinUid = "Safe4USDT"
@@ -58,7 +63,7 @@ public let safe4SrcContract = "0x0000000000000000000000000000000000001101"
 public extension String {
 
     var isSafeCoin: Bool {
-        let safeUids = [safeCoinUid, safe4CoinUid, safe4UsdtCoinUid]
+        let safeUids = [safeCoinUid, safe4CoinUid, safe4UsdtCoinUid, safe4CoinUid_src, safe4CoinUid_eth, safe4CoinUid_bsc, safe4CoinUid_pol]
         return safeUids.contains(self)// || isSafeFourCustomCoin
     }
     
@@ -68,12 +73,12 @@ public extension String {
     }
     
     var isSafe4Coin: Bool {
-        let safeUids = [safe4CoinUid, safe4UsdtCoinUid]
+        let safeUids = [safe4CoinUid, safe4UsdtCoinUid, safe4UsdtCoinUid, safe4CoinUid_src, safe4CoinUid_eth, safe4CoinUid_bsc, safe4CoinUid_pol]
         return safeUids.contains(self)
     }
     
     var isSafe4Test: Bool {
-        self == safe4CoinUid && isSafe4TestNet
+        isSafe4Coin && isSafe4TestNet
     }
     
     var isSafeFourCustomCoin: Bool {

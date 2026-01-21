@@ -354,7 +354,12 @@ extension CoinStorage {
 extension CoinStorage {
     func safe4Coin() -> [Coin] {
         let coinsStr = """
-                        [{"uid":"\(safe4CoinUid)","name":"SAFE", "code":"SAFE"}]
+                        [{"uid":"\(safe4CoinUid)","name":"SAFE", "code":"SAFE"},
+                         {"uid":"\(safe4CoinUid_src)","name":"SAFE", "code":"SAFE"},
+                         {"uid":"\(safe4CoinUid_eth)","name":"SAFE", "code":"SAFE"},
+                         {"uid":"\(safe4CoinUid_bsc)","name":"SAFE", "code":"SAFE"},
+                         {"uid":"\(safe4CoinUid_pol)","name":"SAFE", "code":"SAFE"}
+                        ]
                        """
         guard let safeCoins = [Coin](JSONString: coinsStr)
         else {
@@ -370,25 +375,25 @@ extension CoinStorage {
                          "decimals": 18,
                          "type": "native"
                          },
-                        {"coin_uid":"\(safe4CoinUid)",
+                        {"coin_uid":"\(safe4CoinUid_src)",
                          "blockchain_uid": "\(safe4BlockchainUid)",
                          "address": "\(safe4SrcContract)",
                          "decimals": 18,
                          "type": "eip20"
                         },
-                        {"coin_uid":"\(safe4CoinUid)",
+                        {"coin_uid":"\(safe4CoinUid_eth)",
                          "blockchain_uid": "ethereum",
                          "address": "\(safe4EthContract)",
                          "decimals": 18,
                          "type": "eip20"
                         },
-                        {"coin_uid":"\(safe4CoinUid)",
+                        {"coin_uid":"\(safe4CoinUid_bsc)",
                          "blockchain_uid": "binance-smart-chain",
                          "address": "\(safe4BscContract)",
                          "decimals": 18,
                          "type": "eip20"
                         },
-                        {"coin_uid":"\(safe4CoinUid)",
+                        {"coin_uid":"\(safe4CoinUid_pol)",
                          "blockchain_uid": "polygon-pos",
                          "address": "\(safe4PolContract)",
                          "decimals": 18,
