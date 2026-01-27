@@ -160,7 +160,7 @@ extension TokenType: Equatable {
         let (lhsType, lhsReference) = lhs.values
         let (rhsType, rhsReference) = rhs.values
 
-        return lhsType == rhsType && lhsReference == rhsReference
+        return lhsType == rhsType && lhsReference?.lowercased() == rhsReference?.lowercased()
     }
 }
 

@@ -86,7 +86,12 @@ extension Coin: Hashable {
 
 extension Coin: Equatable {
     public static func == (lhs: Coin, rhs: Coin) -> Bool {
-        lhs.uid == rhs.uid
+        if lhs.uid.isSafeFourCustomCoin || rhs.uid.isSafeFourCustomCoin {
+            return lhs.uid.lowercased() == rhs.uid.lowercased()
+        }else {
+            return lhs.uid == rhs.uid
+        }
+        
     }
 }
 
