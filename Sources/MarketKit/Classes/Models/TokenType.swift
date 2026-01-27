@@ -159,8 +159,11 @@ extension TokenType: Equatable {
     public static func == (lhs: TokenType, rhs: TokenType) -> Bool {
         let (lhsType, lhsReference) = lhs.values
         let (rhsType, rhsReference) = rhs.values
-
-        return lhsType == rhsType && lhsReference?.lowercased() == rhsReference?.lowercased()
+        if case .eip20 = lhs, case .eip20 = rhs {
+            return lhsType == rhsType && lhsReference?.lowercased() == rhsReference?.lowercased()
+        }else {
+            return lhsType == rhsType && lhsReference == rhsReference
+        }
     }
 }
 
