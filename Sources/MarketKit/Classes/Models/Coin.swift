@@ -80,7 +80,11 @@ extension Coin: Identifiable {
 
 extension Coin: Hashable {
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(uid)
+        if uid.isSafeFourCustomCoin {
+            hasher.combine(uid.lowercased())
+        }else {
+            hasher.combine(uid)
+        }
     }
 }
 

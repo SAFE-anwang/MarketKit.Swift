@@ -172,6 +172,11 @@ extension TokenType: Hashable {
         let (type, reference) = values
 
         hasher.combine(type)
-        hasher.combine(reference)
+        if "eip20" == type {
+            hasher.combine(reference?.lowercased())
+        }else {
+            hasher.combine(reference)
+
+        }
     }
 }
