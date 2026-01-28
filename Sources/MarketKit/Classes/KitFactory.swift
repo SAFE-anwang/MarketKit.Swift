@@ -6,7 +6,8 @@ extension Kit {
     private static let dataDirectoryName = "market-kit"
     private static let databaseFileName = "market-kit"
 
-    public static func instance(hsApiBaseUrl: String, cryptoCompareApiKey: String? = nil, hsProviderApiKey: String? = nil, minLogLevel: Logger.Level = .error) throws -> Kit {
+    public static func instance(hsApiBaseUrl: String, cryptoCompareApiKey: String? = nil, hsProviderApiKey: String? = nil, minLogLevel: Logger.Level = .error, isSafe4Test: Bool = false) throws -> Kit {
+        isSafe4TestNet = isSafe4Test
         let logger = Logger(minLogLevel: minLogLevel)
         let reachabilityManager = ReachabilityManager()
         let networkManager = NetworkManager(logger: logger)

@@ -707,3 +707,33 @@ extension HsProvider {
         }
     }
 }
+extension HsProvider {
+    func safeAllSrc20CoinPrice() async throws -> [SafeSrc20CoinPriceModel] {
+        let baseUrl = isSafe4TestNet ? "https://safe4testnet.anwang.com" : "https://safe4.anwang.com"
+        return try await networkManager.fetch(url: "\(baseUrl)/list/market/prices", method: .get, parameters: [:], headers: nil)
+    }
+}
+
+public struct SafeSrc20CoinPriceModel: Codable, Identifiable, ImmutableMappable, Hashable {
+    public var id: String { address }
+    
+    public let address: String
+    public let decimals: Int
+    public let name: String
+    public let symbol: String
+    public let price: String
+    public let change: String
+    public let logoURI: String
+    public let usdtReserves: String
+    
+    public init(map: Map) throws {
+        address = try map.value("address")
+        decimals = try map.value("decimals")
+        name = try map.value("name")
+        symbol = try map.value("symbol")
+        price = try map.value("price")
+        change = try map.value("change")
+        logoURI = try map.value("logoURI")
+        usdtReserves = try map.value("usdtReserves")
+    }
+}

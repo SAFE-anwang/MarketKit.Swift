@@ -43,7 +43,7 @@ public extension TimeInterval {
     }
 }
 
-public let isSafe4TestNet = false
+public var isSafe4TestNet = false
 public let safeCoinUid = "safe-anwang"
 public let safe4CoinUid = "safe4-anwang"
 public let safe4CoinUid_src = "\(SAFE4_Custom_CoinUid)|eip20:\(safe4SrcContract)"
@@ -83,6 +83,10 @@ public extension String {
     
     var isSafeFourCustomCoin: Bool {
         self.contains("custom-safe4-anwang") || self.contains("custom-safe4-anwang|eip20")
+    }
+    
+    var isSafeSrc20CustomCoin: Bool {
+        self.contains("custom-safe4-anwang|eip20")
     }
     
     var isSafeUsdtContract: Bool {

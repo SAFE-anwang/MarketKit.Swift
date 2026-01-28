@@ -45,13 +45,19 @@ class CoinPriceStorage {
 extension CoinPriceStorage {
     func coinPrice(coinUid: String, currencyCode: String) throws -> CoinPrice? {
         try dbPool.read { db in
-            try CoinPrice.filter(CoinPrice.Columns.coinUid == coinUid && CoinPrice.Columns.currencyCode == currencyCode).fetchOne(db)
+            if coinUid.isSafeSrc20CustomCoin {
+                try CoinPrice.filter(CoinPrice.Columns.coinUid.lowercased == coinUid.lowercased() && CoinPrice.Columns.currencyCode == currencyCode).fetchOne(db)
+            }else {
+                try CoinPrice.filter(CoinPrice.Columns.coinUid == coinUid && CoinPrice.Columns.currencyCode == currencyCode).fetchOne(db)
+            }
+            
         }
     }
 
     func coinPrices(coinUids: [String], currencyCode: String) throws -> [CoinPrice] {
         try dbPool.read { db in
-            try CoinPrice.filter(coinUids.contains(CoinPrice.Columns.coinUid) && CoinPrice.Columns.currencyCode == currencyCode).fetchAll(db)
+            let uids = coinUids.map{ $0.isSafeSrc20CustomCoin ? $0.lowercased() : $0}
+            return try CoinPrice.filter(uids.contains(CoinPrice.Columns.coinUid) && CoinPrice.Columns.currencyCode == currencyCode).fetchAll(db)
         }
     }
 
@@ -74,9 +80,16 @@ extension CoinPriceStorage {
     
     func delete(coinPrice coinUid: String) throws {
         _ = try dbPool.write { db in
-            try CoinPrice
-                .filter(CoinPrice.Columns.coinUid == coinUid)
-                .fetchOne(db)
+            if coinUid.isSafeSrc20CustomCoin {
+                try CoinPrice
+                    .filter(CoinPrice.Columns.coinUid.lowercased == coinUid.lowercased())
+                    .fetchOne(db)
+            }else {
+                try CoinPrice
+                    .filter(CoinPrice.Columns.coinUid == coinUid)
+                    .fetchOne(db)
+            }
+            
         }
     }
 }
