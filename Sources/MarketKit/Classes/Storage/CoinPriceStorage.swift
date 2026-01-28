@@ -57,14 +57,15 @@ extension CoinPriceStorage {
     func coinPrices(coinUids: [String], currencyCode: String) throws -> [CoinPrice] {
         try dbPool.read { db in
             let uids = coinUids.map{ $0.isSafeSrc20CustomCoin ? $0.lowercased() : $0}
-            return try CoinPrice.filter(uids.contains(CoinPrice.Columns.coinUid) && CoinPrice.Columns.currencyCode == currencyCode).fetchAll(db)
+            return try CoinPrice.filter((uids.contains(CoinPrice.Columns.coinUid) || uids.contains(CoinPrice.Columns.coinUid.lowercased)) && CoinPrice.Columns.currencyCode == currencyCode).fetchAll(db)
         }
     }
 
     func coinPricesSortedByTimestamp(coinUids: [String], currencyCode: String) throws -> [CoinPrice] {
         try dbPool.read { db in
-            try CoinPrice
-                .filter(coinUids.contains(CoinPrice.Columns.coinUid) && CoinPrice.Columns.currencyCode == currencyCode)
+            let uids = coinUids.map{ $0.isSafeSrc20CustomCoin ? $0.lowercased() : $0}
+            return try CoinPrice
+                .filter((uids.contains(CoinPrice.Columns.coinUid) || uids.contains(CoinPrice.Columns.coinUid.lowercased)) && CoinPrice.Columns.currencyCode == currencyCode)
                 .order(CoinPrice.Columns.timestamp)
                 .fetchAll(db)
         }
