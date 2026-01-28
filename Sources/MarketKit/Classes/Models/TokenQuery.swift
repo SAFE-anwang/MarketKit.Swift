@@ -23,6 +23,10 @@ public struct TokenQuery {
     public var id: String {
         [blockchainType.uid, tokenType.id].joined(separator: "|")
     }
+    
+    public var customCoinUid: String {
+        "custom-\(id)"
+    }
 }
 
 extension TokenQuery: Hashable {
