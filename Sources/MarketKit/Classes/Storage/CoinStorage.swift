@@ -447,7 +447,7 @@ extension CoinStorage {
     /// - Note: This method deletes any existing token with the same coinUid and reference (case-insensitive) before inserting the new one.
     func insertToken(record: TokenRecord) throws {
         _ = try dbPool.write { db in
-            try Coin
+            try TokenRecord
                 .filter(TokenRecord.Columns.coinUid.lowercased == record.coinUid.lowercased() && TokenRecord.Columns.reference.lowercased == record.reference?.lowercased())
                 .deleteAll(db)
             try record.save(db)
