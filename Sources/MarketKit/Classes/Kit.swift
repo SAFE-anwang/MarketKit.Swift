@@ -102,21 +102,54 @@ public extension Kit {
         try coinManager.blockchain(uid: uid)
     }
     
+    /// Inserts a token into storage, ensuring no duplicates.
+    /// - Parameters:
+    ///   - coinUid: The coin UID for the token.
+    ///   - blockchainUid: The blockchain UID for the token.
+    ///   - type: The token type (e.g., "eip20", "bep2", "spl").
+    ///   - decimals: The number of decimals for the token (optional).
+    ///   - reference: The reference for the token (e.g., address for EIP20 tokens, symbol for BEP2 tokens) (optional).
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method deletes any existing token with the same coinUid and reference (case-insensitive) before inserting the new one.
     func insertToken(coinUid: String, blockchainUid: String, type: String, decimals: Int? = nil, reference: String? = nil) throws {
         let record = TokenRecord(coinUid: coinUid, blockchainUid: blockchainUid, type: type, decimals: decimals, reference: reference)
         try coinManager.insertToken(record: record)
     }
     
-    func removeToken(coinUid: String, reference: String) throws {
+    /// Removes a token from storage.
+    /// - Parameters:
+    ///   - coinUid: The coin UID of the token to remove.
+    ///   - reference: The reference (e.g., address) of the token to remove (optional).
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for both coinUid and reference.
+    func removeToken(coinUid: String, reference: String?) throws {
         try coinManager.removeToken(coinUid: coinUid, reference: reference)
     }
     
+    /// Inserts a coin into storage, ensuring no duplicates.
+    /// - Parameter coin: The coin to insert.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method deletes any existing coin with the same UID (case-insensitive) before inserting the new one.
     func insertCoin(coin: Coin) throws {
         try coinManager.insertCoin(coin: coin)
     }
 
+    /// Removes a coin from storage.
+    /// - Parameter uid: The UID of the coin to remove.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for the coin UID.
     func removeCoin(uid: String) throws {
         try coinManager.removeCoin(uid: uid)
+    }
+    
+    /// Updates the image URL for a coin.
+    /// - Parameters:
+    ///   - uid: The UID of the coin to update.
+    ///   - image: The new image URL for the coin.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for the coin UID.
+    func updateCoinImage(uid: String, image: String?) throws {
+        try coinManager.updateCoinImage(uid: uid, image: image)
     }
     // Market Info
 

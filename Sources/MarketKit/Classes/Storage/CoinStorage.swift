@@ -441,34 +441,70 @@ extension CoinStorage {
 }
 extension CoinStorage {
     
+    /// Inserts a token record into storage, ensuring no duplicates.
+    /// - Parameter record: The token record to insert.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method deletes any existing token with the same coinUid and reference (case-insensitive) before inserting the new one.
     func insertToken(record: TokenRecord) throws {
         _ = try dbPool.write { db in
-            try? record.save(db)//insert(db)
+            try Coin
+                .filter(TokenRecord.Columns.coinUid.lowercased == record.coinUid.lowercased() && TokenRecord.Columns.reference.lowercased == record.reference?.lowercased())
+                .deleteAll(db)
+            try record.save(db)
         }
     }
-    func removeToken(coinUid: String, reference: String) throws {
+    
+    /// Removes a token record from storage.
+    /// - Parameters:
+    ///   - coinUid: The coin UID of the token to remove.
+    ///   - reference: The reference (e.g., address) of the token to remove (optional).
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for both coinUid and reference.
+    func removeToken(coinUid: String, reference: String?) throws {
         _ = try dbPool.write { db in
             try TokenRecord
-                .filter(TokenRecord.Columns.coinUid == coinUid && TokenRecord.Columns.reference == reference)
+                .filter(TokenRecord.Columns.coinUid.lowercased == coinUid.lowercased() && TokenRecord.Columns.reference.lowercased == reference?.lowercased())
                 .deleteAll(db)
         }
     }
     
+    /// Inserts a coin into storage, ensuring no duplicates.
+    /// - Parameter coin: The coin to insert.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method deletes any existing coin with the same UID (case-insensitive) before inserting the new one.
     func insertCoin(coin: Coin) throws {
         _ = try dbPool.write { db in
             try Coin
-                .filter(Coin.Columns.uid == coin.uid)
+                .filter(Coin.Columns.uid.lowercased == coin.uid.lowercased())
                 .deleteAll(db)
             
-            try coin.save(db)//insert(db)
+            try coin.save(db)
         }
     }
     
+    /// Removes a coin from storage.
+    /// - Parameter uid: The UID of the coin to remove.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for the coin UID.
     func removeCoin(uid: String) throws {
         _ = try dbPool.write { db in
             try Coin
-                .filter(Coin.Columns.uid == uid)
+                .filter(Coin.Columns.uid.lowercased == uid.lowercased())
                 .deleteAll(db)
+        }
+    }
+    
+    /// Updates the image URL for a coin.
+    /// - Parameters:
+    ///   - uid: The UID of the coin to update.
+    ///   - image: The new image URL for the coin.
+    /// - Throws: An error if the operation fails.
+    /// - Note: This method uses case-insensitive comparison for the coin UID.
+    func updateCoinImage(uid: String, image: String?) throws {
+        _ = try dbPool.write { db in
+            try Coin
+                .filter(Coin.Columns.uid.lowercased == uid.lowercased())
+                .updateAll(db, Coin.Columns.image.set(to: image))
         }
     }
 }

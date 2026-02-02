@@ -118,7 +118,7 @@ extension CoinManager {
         try storage.insertToken(record: record)
     }
     
-    func removeToken(coinUid: String, reference: String) throws {
+    func removeToken(coinUid: String, reference: String?) throws {
         try storage.removeToken(coinUid: coinUid, reference: reference)
     }
     
@@ -128,5 +128,9 @@ extension CoinManager {
     
     func removeCoin(uid: String) throws {
         try storage.removeCoin(uid: uid)
+    }
+    
+    func updateCoinImage(uid: String, image: String?) throws {
+        try storage.updateCoinImage(uid: uid, image: image)
     }
 }
