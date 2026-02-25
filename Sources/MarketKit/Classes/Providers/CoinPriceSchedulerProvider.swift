@@ -59,6 +59,12 @@ extension CoinPriceSchedulerProvider: ISchedulerProvider {
                     coinPrices.append(safe4CoinPrice)
             }
         }
+        
+        let usdtUid = "tether"
+        if let USDTPrice = try await provider.coinPrices(coinUids: [usdtUid], walletCoinUids: [usdtUid], currencyCode: currencyCode).first {
+            let safe4UsdtPrice = CoinPrice(coinUid: safe4UsdtCoinUid, currencyCode: USDTPrice.currencyCode, value: USDTPrice.value, diff24h: USDTPrice.diff24h, diff1d: USDTPrice.diff1d, timestamp: USDTPrice.timestamp)
+            coinPrices.append(safe4UsdtPrice)
+        }
 
         handle(updatedCoinPrices: coinPrices)
     }

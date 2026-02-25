@@ -18,8 +18,20 @@ extension CoinHistoricalPriceManager {
     func coinHistoricalPriceValue(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> Decimal {
         
         if coinUid.isSafeCoin {
-            return try await safeCoinHistoricalPriceValue(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
-            
+            if coinUid == safe4UsdtCoinUid {
+                let usdtUid = "tether"
+                let response = try await hsProvider.historicalCoinPrice(coinUid: usdtUid, currencyCode: currencyCode, timestamp: timestamp)
+
+                guard abs(Int(timestamp) - response.timestamp) < 24 * 60 * 60 else { // 1 day
+                    throw ResponseError.returnedTimestampIsTooInaccurate
+                }
+
+                try? storage.save(coinHistoricalPrice: CoinHistoricalPrice(coinUid: safe4UsdtCoinUid, currencyCode: currencyCode, value: response.price, timestamp: timestamp))
+
+                return response.price
+            }else {
+                return try await safeCoinHistoricalPriceValue(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
+            }
         }else {
             
             let response = try await hsProvider.historicalCoinPrice(coinUid: coinUid, currencyCode: currencyCode, timestamp: timestamp)
