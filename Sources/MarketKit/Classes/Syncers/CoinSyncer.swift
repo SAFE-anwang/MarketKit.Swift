@@ -152,7 +152,22 @@ extension CoinSyncer {
                 async let blockchainRecords = try hsProvider.allBlockchainRecords()
                 async let tokenRecords = try hsProvider.allTokenRecords()
 
-                try await self?.handleFetched(coins: coins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
+                var fetchedCoins = try await coins
+                fetchedCoins = fetchedCoins.map { coin in
+                    if coin.code == "BSC-USD" {
+                        return Coin(
+                            uid: coin.uid,
+                            name: coin.name,
+                            code: "BSC-USDT",
+                            marketCapRank: coin.marketCapRank,
+                            coinGeckoId: coin.coinGeckoId,
+                            image: coin.image
+                        )
+                    }
+                    return coin
+                }
+
+                try await self?.handleFetched(coins: fetchedCoins, blockchainRecords: blockchainRecords, tokenRecords: tokenRecords)
                 self?.saveLastSyncTimestamps(coins: coinsTimestamp, blockchains: blockchainsTimestamp, tokens: tokensTimestamp)
             } catch {
                 print("Market data fetch error: \(error)")
