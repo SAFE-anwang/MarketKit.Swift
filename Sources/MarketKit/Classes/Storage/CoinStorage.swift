@@ -285,7 +285,21 @@ extension CoinStorage {
     
     func update(coins: [Coin], blockchainRecords: [BlockchainRecord], tokenRecords: [TokenRecord]) throws {
         
-        let coins = coins + safeCoin() + safe4Coin() + safe4UsdtCoin()
+        let normalizedCoins = coins.map { coin in
+            if coin.code == "BSC-USD" {
+                return Coin(
+                    uid: coin.uid,
+                    name: coin.name,
+                    code: "BSC-USDT",
+                    marketCapRank: coin.marketCapRank,
+                    coinGeckoId: coin.coinGeckoId,
+                    image: coin.image
+                )
+            }
+            return coin
+        }
+        
+        let coins = normalizedCoins + safeCoin() + safe4Coin() + safe4UsdtCoin()
         let blockchainRecords = blockchainRecords + safeBlockchain() + safe4Blockchain()
         let tokenRecords = tokenRecords + safeToken() + safe4Token()
         
