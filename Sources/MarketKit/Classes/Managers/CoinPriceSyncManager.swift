@@ -115,6 +115,14 @@ extension CoinPriceSyncManager: ICoinPriceCoinUidDataSource {
             Array(observingCoinUids(currencyCode: currencyCode))
         }
     }
+    
+    func combinedCoinUids(currencyCode: String) -> ([String], [String]) {
+        queue.sync {
+            let allCoinUids = Array(observingCoinUids(currencyCode: currencyCode))
+            let walletCoinUids = Array(observingCoinUids(currencyCode: currencyCode))
+            return (allCoinUids, walletCoinUids)
+        }
+    }
 }
 
 extension CoinPriceSyncManager {
