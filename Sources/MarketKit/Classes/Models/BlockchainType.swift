@@ -23,7 +23,10 @@ public enum BlockchainType {
     case ton
     case base
     case zkSync
+    case robinhood
     case stellar
+    case thorChain
+    case mayaChain
     case unsupported(uid: String)
 
     public init(uid: String) {
@@ -52,7 +55,10 @@ public enum BlockchainType {
         case "the-open-network": self = .ton
         case "base": self = .base
         case "zksync": self = .zkSync
+        case "robinhood": self = .robinhood
         case "stellar": self = .stellar
+        case "thorchain": self = .thorChain
+        case "mayachain": self = .mayaChain
         default: self = .unsupported(uid: uid)
         }
     }
@@ -83,7 +89,10 @@ public enum BlockchainType {
         case .ton: return "the-open-network"
         case .base: return "base"
         case .zkSync: return "zksync"
+        case .robinhood: return "robinhood"
         case .stellar: return "stellar"
+        case .thorChain: return "thorchain"
+        case .mayaChain: return "mayachain"
         case let .unsupported(uid): return uid
         
         }
