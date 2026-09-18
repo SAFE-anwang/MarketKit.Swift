@@ -163,11 +163,27 @@ extension CoinPriceSyncManager: ICoinPriceManagerDelegate {
                 // send new rates for all subject which has at least one coinType in key
                 if key.currencyCode == currencyCode {
                     let coinPrices = coinPriceMap.filter { coinUid, _ in
-                        key.coinUids.contains(coinUid)
+                        key.coinUids.contains { requestedUid in
+                            requestedUid == coinUid
+                                || (requestedUid.isSafeSrc20CustomCoin
+                                    && requestedUid.caseInsensitiveCompare(coinUid) == .orderedSame)
+                        }
                     }
 
                     if !coinPrices.isEmpty {
-                        subject.send(coinPrices)
+                        var normalizedCoinPrices = [String: CoinPrice]()
+                        for (coinUid, coinPrice) in coinPrices {
+                            guard let requestedUid = key.coinUids.first(where: { requestedUid in
+                                requestedUid == coinUid
+                                    || (requestedUid.isSafeSrc20CustomCoin
+                                        && requestedUid.caseInsensitiveCompare(coinUid) == .orderedSame)
+                            }) else {
+                                continue
+                            }
+
+                            normalizedCoinPrices[requestedUid] = coinPrice
+                        }
+                        subject.send(normalizedCoinPrices)
                     }
                 }
             }

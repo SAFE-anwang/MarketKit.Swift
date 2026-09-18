@@ -223,8 +223,11 @@ extension HsProvider {
 
     // Coin Prices
 
-    func coinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
-        let uids = coinUids.filter{ !$0.isSafeCoin }.joined(separator: ",")
+    func regularCoinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
+        // SRC20 has a separate Safe4 endpoint and is not a normal Market API coin.
+        // Sending its custom UID to /v1/coins can fail the whole mixed request.
+        let nonSafeCoinUids = coinUids.filter { !$0.isSafeCoin && !$0.isSafe4Src20Token }
+        let uids = nonSafeCoinUids.joined(separator: ",")
         var parameters: Parameters = [
             "uids": uids,
             "currency": currencyCode.lowercased(),
@@ -232,23 +235,62 @@ extension HsProvider {
         ]
 
         if !walletCoinUids.isEmpty {
-            parameters["enabled_uids"] = walletCoinUids.filter{ !$0.isSafeCoin }.joined(separator: ",")
+            parameters["enabled_uids"] = walletCoinUids
+                .filter { !$0.isSafeCoin && !$0.isSafe4Src20Token }
+                .joined(separator: ",")
         }
-        if coinUids.filter({$0.isSafeCoin}).count > 0 {
-            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
-
-            let safeParameters = [
-               "uids": safeCoinUid,
-               "currency": currencyCode,
-               "fields": "price,price_change_24h,last_updated"
-            ]
-            let safeResponses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(safeBaseUrl)/v1/coins", method: .get, parameters: safeParameters, headers: headers)
-
-            return (responses + safeResponses).compactMap { $0.coinPrice(currencyCode: currencyCode) }
-        }else {
-            let responses: [CoinPriceResponse] = try await networkManager.fetch(url: "\(baseUrl)/v1/coins", method: .get, parameters: parameters, headers: headers)
-            return responses.map { $0.coinPrice(currencyCode: currencyCode) }
+        let responses: [CoinPriceResponse]
+        if nonSafeCoinUids.isEmpty {
+            responses = []
+        } else {
+            responses = try await networkManager.fetch(
+                url: "\(baseUrl)/v1/coins",
+                method: .get,
+                parameters: parameters,
+                headers: headers
+            )
         }
+
+        return responses.map { $0.coinPrice(currencyCode: currencyCode) }
+    }
+
+    func safeCoinPrices(currencyCode: String) async throws -> [CoinPrice] {
+        let safeParameters = [
+            "uids": safeCoinUid,
+            "currency": currencyCode,
+            "fields": "price,price_change_24h,last_updated"
+        ]
+
+        let safeResponses: [CoinPriceResponse] = try await networkManager.fetch(
+            url: "\(safeBaseUrl)/v1/coins",
+            method: .get,
+            parameters: safeParameters,
+            headers: headers
+        )
+
+        return safeResponses.compactMap { $0.coinPrice(currencyCode: currencyCode) }
+    }
+
+    // Kept as a compatibility entry point for callers that need both sources.
+    // The scheduler uses the two source-specific methods so one failure cannot
+    // prevent the other source from being persisted and published.
+    func coinPrices(coinUids: [String], walletCoinUids: [String], currencyCode: String) async throws -> [CoinPrice] {
+        var coinPrices = (try? await regularCoinPrices(
+            coinUids: coinUids,
+            walletCoinUids: walletCoinUids,
+            currencyCode: currencyCode
+        )) ?? []
+
+        let hasSafeNativePrice = coinUids.contains {
+            $0.isSafeCoin && $0.caseInsensitiveCompare(safe4UsdtCoinUid) != .orderedSame
+        }
+        guard hasSafeNativePrice else {
+            return coinPrices
+        }
+        if let safePrices = try? await safeCoinPrices(currencyCode: currencyCode) {
+            coinPrices.append(contentsOf: safePrices)
+        }
+        return coinPrices
     }
 
     func historicalCoinPrice(coinUid: String, currencyCode: String, timestamp: TimeInterval) async throws -> HistoricalCoinPriceResponse {
@@ -734,7 +776,7 @@ public struct SafeSrc20CoinPriceModel: Codable, Identifiable, ImmutableMappable,
         symbol = try map.value("symbol")
         price = try map.value("price")
         change = try map.value("change")
-        logoURI = try map.value("logoURI")
-        usdtReserves = try map.value("usdtReserves")
+        logoURI = (try? map.value("logoURI")) ?? ""
+        usdtReserves = (try? map.value("quoteReservers")) ?? (try? map.value("usdtReserves")) ?? ""
     }
 }
