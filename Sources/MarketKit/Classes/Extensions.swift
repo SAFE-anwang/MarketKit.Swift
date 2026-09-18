@@ -64,17 +64,16 @@ public extension String {
 
     var isSafeCoin: Bool {
         let safeUids = [safeCoinUid, safe4CoinUid, safe4UsdtCoinUid, safe4CoinUid_src, safe4CoinUid_eth, safe4CoinUid_bsc, safe4CoinUid_pol]
-        return safeUids.contains(self)// || isSafeFourCustomCoin
+        return safeUids.contains { $0.caseInsensitiveCompare(self) == .orderedSame }
     }
     
     var isSafe3Coin: Bool {
-        let safeUids = [safeCoinUid]
-        return safeUids.contains(self)
+        safeCoinUid.caseInsensitiveCompare(self) == .orderedSame
     }
     
     var isSafe4Coin: Bool {
         let safeUids = [safe4CoinUid, safe4UsdtCoinUid, safe4UsdtCoinUid, safe4CoinUid_src, safe4CoinUid_eth, safe4CoinUid_bsc, safe4CoinUid_pol]
-        return safeUids.contains(self)
+        return safeUids.contains { $0.caseInsensitiveCompare(self) == .orderedSame }
     }
     
     var isSafe4Test: Bool {
@@ -82,11 +81,17 @@ public extension String {
     }
     
     var isSafeFourCustomCoin: Bool {
-        self.contains("custom-safe4-anwang") || self.contains("custom-safe4-anwang|eip20")
+        lowercased().contains("custom-safe4-anwang")
     }
     
     var isSafeSrc20CustomCoin: Bool {
-        self.contains("custom-safe4-anwang|eip20")
+        lowercased().contains("custom-safe4-anwang|eip20")
+    }
+
+    // Fixed Safe4 wrapped assets use the same UID shape but receive the SAFE
+    // native price. Only other custom EIP20 UIDs belong to the SRC20 endpoint.
+    var isSafe4Src20Token: Bool {
+        isSafeSrc20CustomCoin && !isSafeCoin
     }
     
     var isSafeUsdtContract: Bool {
@@ -115,4 +120,3 @@ public extension Coin {
         uid == safe4UsdtCoinUid
     }
 }
-
