@@ -24,9 +24,12 @@ public enum BlockchainType {
     case base
     case zkSync
     case robinhood
+    case arc
     case stellar
     case thorChain
     case mayaChain
+    case xrp
+    case near
     case unsupported(uid: String)
 
     public init(uid: String) {
@@ -56,9 +59,12 @@ public enum BlockchainType {
         case "base": self = .base
         case "zksync": self = .zkSync
         case "robinhood": self = .robinhood
+        case "arc": self = .arc
         case "stellar": self = .stellar
         case "thorchain": self = .thorChain
         case "mayachain": self = .mayaChain
+        case "xrp": self = .xrp
+        case "near-protocol": self = .near
         default: self = .unsupported(uid: uid)
         }
     }
@@ -90,9 +96,12 @@ public enum BlockchainType {
         case .base: return "base"
         case .zkSync: return "zksync"
         case .robinhood: return "robinhood"
+        case .arc: return "arc"
         case .stellar: return "stellar"
         case .thorChain: return "thorchain"
         case .mayaChain: return "mayachain"
+        case .xrp: return "xrp"
+        case .near: return "near-protocol"
         case let .unsupported(uid): return uid
         
         }

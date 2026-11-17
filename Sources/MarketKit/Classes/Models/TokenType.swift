@@ -20,6 +20,10 @@ public enum TokenType {
     case stellar(code: String, issuer: String)
     case zanoAsset(id: String)
     case thorChainAsset(denom: String)
+    // XRP Ledger issued currency (trust-line token): `currency` in ledger form (3-char code or 40 hex), `issuer` — classic r-address
+    case xrpAsset(currency: String, issuer: String)
+    // NEAR NEP-141 fungible token: `contractId` — token contract account id, e.g. `usdt.tether-token.near`
+    case nep141(contractId: String)
     case unsupported(type: String, reference: String?)
 
     public init(type: String, reference: String? = nil) {
@@ -61,6 +65,19 @@ public enum TokenType {
             case "thorchain":
                 if let reference {
                     self = .thorChainAsset(denom: reference)
+                    return
+                }
+            case "xrp":
+                if let reference {
+                    let components = reference.components(separatedBy: "-")
+                    if components.count == 2, !components[0].isEmpty, !components[1].isEmpty {
+                        self = .xrpAsset(currency: components[0], issuer: components[1])
+                        return
+                    }
+                }
+            case "near-protocol":
+                if let reference, !reference.isEmpty {
+                    self = .nep141(contractId: reference)
                     return
                 }
             default: ()
@@ -117,6 +134,14 @@ public enum TokenType {
                 }
             case "zano": self = .zanoAsset(id: chunks[1])
             case "thorchain": self = .thorChainAsset(denom: chunks[1])
+            case "xrp":
+                let components = chunks[1].components(separatedBy: "-")
+                if components.count == 2, !components[0].isEmpty, !components[1].isEmpty {
+                    self = .xrpAsset(currency: components[0], issuer: components[1])
+                } else {
+                    return nil
+                }
+            case "near-protocol": self = .nep141(contractId: chunks[1])
             case "unsupported": self = .unsupported(type: chunks[1], reference: nil)
             default: return nil
             }
@@ -150,6 +175,10 @@ public enum TokenType {
             return ["zano", id].joined(separator: ":")
         case let .thorChainAsset(denom):
             return ["thorchain", denom].joined(separator: ":")
+        case let .xrpAsset(currency, issuer):
+            return ["xrp", [currency, issuer].joined(separator: "-")].joined(separator: ":")
+        case let .nep141(contractId):
+            return ["near-protocol", contractId].joined(separator: ":")
         case let .unsupported(type, reference):
             if let reference {
                 return ["unsupported", type, reference].joined(separator: ":")
@@ -170,6 +199,8 @@ public enum TokenType {
         case let .stellar(code, issuer): return (type: "stellar", reference: [code, issuer].joined(separator: "-"))
         case let .zanoAsset(id): return (type: "zano", reference: id)
         case let .thorChainAsset(denom): return (type: "thorchain", reference: denom)
+        case let .xrpAsset(currency, issuer): return (type: "xrp", reference: [currency, issuer].joined(separator: "-"))
+        case let .nep141(contractId): return (type: "near-protocol", reference: contractId)
         case let .unsupported(type, reference): return (type: type, reference: reference)
         }
     }
